@@ -1,0 +1,28 @@
+{
+  "name": "@classic-games/three-components",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src"
+  },
+  "peerDependencies": {
+    "three": "^0.170.0",
+    "@react-three/fiber": "^8.0.0",
+    "@react-three/drei": "^9.0.0",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/three": "^0.170.0",
+    "typescript": "^5.9.2"
+  }
+}

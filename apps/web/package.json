@@ -12,7 +12,7 @@
     "@classic-games/game-engine": "*",
     "@react-three/drei": "^9.117.3",
     "@react-three/fiber": "^8.17.10",
-    "next": "^14.0.0",
+    "next": "^13.5.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "three": "^0.170.0",

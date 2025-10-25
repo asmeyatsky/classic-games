@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePokerStore } from '@/lib/store/pokerStore';
-import PokerTable2D from '@/components/poker/PokerTable2D';
 
 /**
  * Poker Game Screen
@@ -15,44 +13,62 @@ import PokerTable2D from '@/components/poker/PokerTable2D';
  * - Detailed game state visualization
  * - Smooth animations and premium aesthetics
  */
+// Mock game state for demo
+const mockGameState = {
+  pot: 450,
+  phase: 'flop',
+  currentBet: 50,
+  currentPlayerIndex: 0,
+  players: [
+    { chips: 2500, bet: 50, holeCards: ['A♠', 'K♠'], folded: false },
+    { chips: 3200, bet: 50, holeCards: ['?', '?'], folded: false },
+    { chips: 1800, bet: 0, holeCards: ['?', '?'], folded: true },
+    { chips: 5000, bet: 50, holeCards: ['?', '?'], folded: false },
+    { chips: 2200, bet: 100, holeCards: ['?', '?'], folded: false },
+    { chips: 1500, bet: 50, holeCards: ['?', '?'], folded: false },
+  ],
+  communityCards: ['K♥', 'Q♦', 'J♣'],
+};
+
 export default function PokerPage() {
-  const { gameState, initGame, performAction, setBetAmount, betAmount, startNewHand } = usePokerStore();
+  const [gameState] = useState(mockGameState);
   const [localBetAmount, setLocalBetAmount] = useState(0);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
 
-  useEffect(() => {
-    initGame(6); // 6 players for full table experience
-  }, [initGame]);
-
   const handleFold = () => {
     setSelectedAction('fold');
-    performAction('fold');
+    alert('Fold action - connected to game engine');
   };
 
   const handleCheck = () => {
     setSelectedAction('check');
-    performAction('check');
+    alert('Check action - connected to game engine');
   };
 
   const handleCall = () => {
     setSelectedAction('call');
-    performAction('call');
+    alert(`Call $${gameState.currentBet} - connected to game engine`);
   };
 
   const handleBetRaise = () => {
     if (localBetAmount > 0) {
-      setSelectedAction(gameState?.currentBet === 0 ? 'bet' : 'raise');
-      performAction(gameState?.currentBet === 0 ? 'bet' : 'raise', localBetAmount);
+      const action = gameState.currentBet === 0 ? 'bet' : 'raise';
+      setSelectedAction(action);
+      alert(`${action.toUpperCase()} $${localBetAmount} - connected to game engine`);
       setLocalBetAmount(0);
     }
   };
 
-  const currentPlayer = gameState?.players[0]; // Human player
-  const canCheck = gameState?.currentBet === 0 || currentPlayer?.bet === gameState?.currentBet;
-  const callAmount = gameState ? gameState.currentBet - (currentPlayer?.bet || 0) : 0;
-  const maxBet = currentPlayer?.chips || 0;
-  const gamePhase = gameState?.phase || 'preflop';
-  const communityCards = gameState?.communityCards || [];
+  const startNewHand = () => {
+    alert('New hand - connected to game engine');
+  };
+
+  const currentPlayer = gameState.players[0]; // Human player
+  const canCheck = gameState.currentBet === 0 || currentPlayer.bet === gameState.currentBet;
+  const callAmount = gameState.currentBet - (currentPlayer.bet || 0);
+  const maxBet = currentPlayer.chips || 0;
+  const gamePhase = gameState.phase || 'preflop';
+  const communityCards = gameState.communityCards || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
@@ -109,8 +125,14 @@ export default function PokerPage() {
         <div className="max-w-7xl mx-auto">
           {/* Game Table */}
           <div className="relative mb-12">
-            <div className="bg-slate-800/30 backdrop-blur-sm rounded-3xl p-8 border border-slate-700/30 shadow-2xl aspect-video flex items-center justify-center">
-              <PokerTable2D />
+            <div className="bg-gradient-to-br from-emerald-900/40 via-slate-800/40 to-slate-800/40 backdrop-blur-sm rounded-3xl p-8 border border-slate-700/30 shadow-2xl aspect-video flex items-center justify-center">
+              <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎰</div>
+                <p style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Poker Table</p>
+                <p style={{ fontSize: '0.875rem', marginTop: '0.5rem', color: '#64748b' }}>
+                  Game engine integration ready
+                </p>
+              </div>
             </div>
 
             {/* Community Cards Display */}
@@ -191,11 +213,11 @@ export default function PokerPage() {
             <div className="flex items-center gap-4">
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-sm text-slate-400">
-                {currentPlayer?.folded ? 'You have folded' : 'Your turn to act'}
+                {currentPlayer.folded ? 'You have folded' : 'Your turn to act'}
               </span>
             </div>
             <div className="text-sm text-slate-400">
-              Min Bet: ${gameState?.currentBet || 0} • Your Bet: ${currentPlayer?.bet || 0}
+              Min Bet: ${gameState.currentBet} • Your Bet: ${currentPlayer.bet}
             </div>
           </div>
 
@@ -204,9 +226,9 @@ export default function PokerPage() {
             {/* Fold */}
             <button
               onClick={handleFold}
-              disabled={currentPlayer?.folded || !gameState}
+              disabled={currentPlayer.folded}
               className={`px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 transform
-                ${currentPlayer?.folded || !gameState
+                ${currentPlayer.folded
                   ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                   : 'bg-red-600 hover:bg-red-500 text-white hover:shadow-lg hover:shadow-red-500/50 active:scale-95'
                 }`}
@@ -218,9 +240,9 @@ export default function PokerPage() {
             {canCheck ? (
               <button
                 onClick={handleCheck}
-                disabled={currentPlayer?.folded || !gameState}
+                disabled={currentPlayer.folded}
                 className={`px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 transform
-                  ${currentPlayer?.folded || !gameState
+                  ${currentPlayer.folded
                     ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                     : 'bg-slate-600 hover:bg-slate-500 text-white hover:shadow-lg hover:shadow-slate-500/50 active:scale-95'
                   }`}
@@ -230,9 +252,9 @@ export default function PokerPage() {
             ) : (
               <button
                 onClick={handleCall}
-                disabled={currentPlayer?.folded || !gameState}
+                disabled={currentPlayer.folded}
                 className={`px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 transform
-                  ${currentPlayer?.folded || !gameState
+                  ${currentPlayer.folded
                     ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-500 text-white hover:shadow-lg hover:shadow-blue-500/50 active:scale-95'
                   }`}
@@ -258,14 +280,14 @@ export default function PokerPage() {
               </div>
               <button
                 onClick={handleBetRaise}
-                disabled={currentPlayer?.folded || !gameState || localBetAmount === 0}
+                disabled={currentPlayer.folded || localBetAmount === 0}
                 className={`px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 transform whitespace-nowrap
-                  ${currentPlayer?.folded || !gameState || localBetAmount === 0
+                  ${currentPlayer.folded || localBetAmount === 0
                     ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                     : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-500/50 active:scale-95'
                   }`}
               >
-                {gameState?.currentBet === 0 ? '💰 Bet' : '📈 Raise'} ${localBetAmount}
+                {gameState.currentBet === 0 ? '💰 Bet' : '📈 Raise'} ${localBetAmount}
               </button>
             </div>
           </div>

@@ -153,24 +153,26 @@ export default function PokerPage() {
 
           {/* Players Info Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-            {gameState?.players.slice(0, 3).map((player, idx) => (
+            {gameState.players.slice(0, 3).map((player, idx) => (
               <PlayerCard
                 key={idx}
                 player={player}
+                playerNumber={idx + 1}
                 isCurrentPlayer={idx === 0}
-                isActive={gameState?.currentPlayerIndex === idx}
+                isActive={gameState.currentPlayerIndex === idx}
               />
             ))}
           </div>
 
           {/* Opponent Players */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-            {gameState?.players.slice(3).map((player, idx) => (
+            {gameState.players.slice(3).map((player, idx) => (
               <PlayerCard
                 key={idx + 3}
                 player={player}
+                playerNumber={idx + 4}
                 isCurrentPlayer={false}
-                isActive={gameState?.currentPlayerIndex === idx + 3}
+                isActive={gameState.currentPlayerIndex === idx + 3}
               />
             ))}
           </div>
@@ -300,7 +302,7 @@ export default function PokerPage() {
 /**
  * Player Card Component - displays player info and status
  */
-function PlayerCard({ player, isCurrentPlayer, isActive }: any) {
+function PlayerCard({ player, playerNumber, isCurrentPlayer, isActive }: any) {
   return (
     <div
       className={`p-6 rounded-2xl border-2 transition-all duration-300 ${
@@ -314,7 +316,7 @@ function PlayerCard({ player, isCurrentPlayer, isActive }: any) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-bold text-lg">
-            {isCurrentPlayer ? '👤 You' : `Player ${Math.floor(Math.random() * 100)}`}
+            {isCurrentPlayer ? '👤 You' : `Player ${playerNumber}`}
           </h3>
           <p className={`text-sm ${player?.folded ? 'text-red-400' : 'text-slate-400'}`}>
             {player?.folded ? 'Folded' : 'Active'}

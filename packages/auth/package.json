@@ -1,0 +1,33 @@
+{
+  "name": "@classic-games/auth",
+  "version": "1.0.0",
+  "description": "Firebase authentication and user management for Classic Games",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./client": {
+      "import": "./dist/client.js"
+    },
+    "./server": {
+      "import": "./dist/server.js"
+    },
+    "./middleware": {
+      "import": "./dist/middleware.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "firebase": "^10.7.0",
+    "firebase-admin": "^12.0.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "typescript": "^5.9.2"
+  }
+}

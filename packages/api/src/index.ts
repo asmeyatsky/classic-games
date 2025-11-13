@@ -21,6 +21,8 @@ import gameRoutes from './routes/games';
 import achievementRoutes from './routes/achievements';
 import tournamentRoutes from './routes/tournaments';
 import socialRoutes from './routes/social';
+import replayRoutes from './routes/replays';
+import { initializeEventBus } from './services/eventBus';
 
 // Initialize logger
 const logger = initializeGlobalLogger({
@@ -142,6 +144,7 @@ function setupRoutes() {
   app.use('/api/achievements', achievementRoutes);
   app.use('/api/tournaments', tournamentRoutes);
   app.use('/api/social', socialRoutes);
+  app.use('/api/replays', replayRoutes);
 
   // 404 handler
   app.use(notFoundHandler);
@@ -155,6 +158,9 @@ function setupRoutes() {
  */
 async function start() {
   try {
+    // Initialize event bus
+    initializeEventBus();
+
     await initializeServices();
     setupMiddleware();
     setupRoutes();

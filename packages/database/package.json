@@ -1,0 +1,35 @@
+{
+  "name": "@classic-games/database",
+  "version": "1.0.0",
+  "description": "PostgreSQL database client, schemas, and migrations for Classic Games",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./client": {
+      "import": "./dist/client.js"
+    },
+    "./schemas": {
+      "import": "./dist/schemas/index.js"
+    },
+    "./migrations": {
+      "import": "./dist/migrations/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "migrate:latest": "node dist/migrations/runner.js latest",
+    "migrate:rollback": "node dist/migrations/runner.js rollback",
+    "db:setup": "npm run build && npm run migrate:latest"
+  },
+  "dependencies": {
+    "postgres": "^3.4.3",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "typescript": "^5.9.2"
+  }
+}

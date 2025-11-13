@@ -8,21 +8,19 @@ import helmet from 'helmet';
 import { initializeDatabase } from '@classic-games/database';
 import { initializeFirebaseAdmin } from '@classic-games/auth';
 import { initializeSentry, initializeWebVitals } from '@classic-games/analytics';
-import {
-  initializeGlobalLogger,
-  getLogger,
-} from '@classic-games/logger';
+import { initializeGlobalLogger, getLogger } from '@classic-games/logger';
 import { SERVER_CONFIG } from '@classic-games/config';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import { attachUserInfo, requireAuth } from '@classic-games/auth';
 import userRoutes from './routes/users';
 import roomRoutes from './routes/rooms';
 import leaderboardRoutes from './routes/leaderboard';
+import gameRoutes from './routes/games';
 
 // Initialize logger
 const logger = initializeGlobalLogger({
   name: 'classic-games-api',
-  environment: process.env.NODE_ENV as 'development' | 'staging' | 'production' || 'development',
+  environment: (process.env.NODE_ENV as 'development' | 'staging' | 'production') || 'development',
 });
 
 const app: Express = express();
@@ -80,7 +78,10 @@ function setupMiddleware() {
   // CORS
   app.use(
     cors({
-      origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:8081'],
+      origin: process.env.CORS_ORIGINS?.split(',') || [
+        'http://localhost:3000',
+        'http://localhost:8081',
+      ],
       credentials: true,
     })
   );
@@ -131,6 +132,7 @@ function setupRoutes() {
   // API Routes
   app.use('/api/users', userRoutes);
   app.use('/api/rooms', roomRoutes);
+  app.use('/api/games', gameRoutes);
   app.use('/api/leaderboard', leaderboardRoutes);
 
   // 404 handler

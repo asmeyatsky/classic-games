@@ -25,6 +25,7 @@
     "db:setup": "npm run build && npm run migrate:latest"
   },
   "dependencies": {
+    "@classic-games/logger": "*",
     "postgres": "^3.4.3",
     "dotenv": "^16.3.1"
   },

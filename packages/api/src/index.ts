@@ -14,6 +14,7 @@ import { SERVER_CONFIG } from '@classic-games/config';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import { attachUserInfo, requireAuth } from '@classic-games/auth';
 import { initializeWebSocketServer } from './websocket';
+import { apiLimiter, authLimiter, createLimiter } from './middleware/rateLimit';
 import userRoutes from './routes/users';
 import roomRoutes from './routes/rooms';
 import leaderboardRoutes from './routes/leaderboard';
@@ -108,6 +109,9 @@ function setupMiddleware() {
 
     next();
   });
+
+  // Rate limiting
+  app.use(apiLimiter);
 
   // Auth attachment
   app.use(attachUserInfo);

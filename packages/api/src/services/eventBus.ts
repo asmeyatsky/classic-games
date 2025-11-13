@@ -45,6 +45,42 @@ interface Subscription {
   priority: number;
 }
 
+/**
+ * EventBus - Centralized event management system for the application
+ *
+ * Provides publish-subscribe pattern for decoupled event handling with:
+ * - Priority-based handler execution
+ * - Event filtering capabilities
+ * - Event history tracking
+ * - Async queue processing
+ * - Comprehensive error handling
+ *
+ * @example
+ * const bus = new EventBus();
+ *
+ * // Subscribe to events
+ * const subId = bus.subscribe('game:ended', async (event) => {
+ *   console.log('Game ended:', event.data);
+ * }, { priority: 10 });
+ *
+ * // Emit events
+ * await bus.emit({
+ *   type: 'game:ended',
+ *   userId: 'user-123',
+ *   gameId: 'game-456',
+ *   data: { winnerId: 'player-1' }
+ * });
+ *
+ * // Unsubscribe
+ * bus.unsubscribe(subId);
+ *
+ * // Get history
+ * const history = bus.getHistory({
+ *   eventType: 'game:ended',
+ *   userId: 'user-123',
+ *   limit: 10
+ * });
+ */
 export class EventBus {
   private subscriptions: Map<string, Subscription> = new Map();
   private subscriptionCounter = 0;
@@ -54,7 +90,25 @@ export class EventBus {
   private maxHistorySize = 1000;
 
   /**
-   * Subscribe to events
+   * Subscribe to events with optional filtering and priority
+   *
+   * @param {EventType | '*'} eventType - Event type to subscribe to ('*' for all)
+   * @param {EventHandler} handler - Async handler function to execute
+   * @param {Object} options - Optional configuration
+   * @param {EventFilter} [options.filter] - Optional filter function to match events
+   * @param {number} [options.priority=0] - Handler execution priority (higher = first)
+   * @returns {string} Unique subscription ID for later unsubscription
+   *
+   * @example
+   * const subId = bus.subscribe('game:ended',
+   *   async (event) => {
+   *     await updateRatings(event.userId, event.data);
+   *   },
+   *   {
+   *     filter: (e) => e.data.winnerId !== null,
+   *     priority: 10
+   *   }
+   * );
    */
   subscribe(
     eventType: EventType | '*',
@@ -81,6 +135,14 @@ export class EventBus {
 
   /**
    * Unsubscribe from events
+   *
+   * @param {string} subscriptionId - Subscription ID returned from subscribe()
+   * @returns {boolean} True if subscription was removed, false if not found
+   *
+   * @example
+   * const subId = bus.subscribe('game:ended', handler);
+   * // Later...
+   * bus.unsubscribe(subId); // true
    */
   unsubscribe(subscriptionId: string): boolean {
     const result = this.subscriptions.delete(subscriptionId);
@@ -93,7 +155,27 @@ export class EventBus {
   }
 
   /**
-   * Emit an event
+   * Emit an event to all matching subscribers
+   *
+   * The event is queued and processed asynchronously. All matching handlers
+   * are executed in parallel after being sorted by priority.
+   *
+   * @param {GameEvent} event - Event to emit
+   * @returns {Promise<void>} Resolves when event is queued (not when handlers complete)
+   *
+   * @throws {Error} If event type is invalid
+   *
+   * @example
+   * await bus.emit({
+   *   type: 'game:ended',
+   *   userId: 'user-123',
+   *   gameId: 'game-456',
+   *   data: {
+   *     winnerId: 'player-1',
+   *     score: 100,
+   *     duration: 300
+   *   }
+   * });
    */
   async emit(event: GameEvent): Promise<void> {
     // Validate event
@@ -192,7 +274,33 @@ export class EventBus {
   }
 
   /**
-   * Get event history
+   * Get event history with optional filtering
+   *
+   * Retrieves events from the history (last 1000 events) with optional filters.
+   * Filters are combined with AND logic.
+   *
+   * @param {Object} filter - Optional filter criteria
+   * @param {EventType} [filter.eventType] - Filter by event type
+   * @param {string} [filter.userId] - Filter by user ID
+   * @param {string} [filter.gameId] - Filter by game ID
+   * @param {string} [filter.since] - Filter events since this ISO timestamp
+   * @param {number} [filter.limit] - Maximum number of events to return
+   * @returns {GameEvent[]} Array of matching events
+   *
+   * @example
+   * // Get last 10 games ended events
+   * const gameEnds = bus.getHistory({
+   *   eventType: 'game:ended',
+   *   limit: 10
+   * });
+   *
+   * // Get all events for a user in the last hour
+   * const now = new Date();
+   * const onHourAgo = new Date(now.getTime() - 3600000).toISOString();
+   * const userEvents = bus.getHistory({
+   *   userId: 'user-123',
+   *   since: onHourAgo
+   * });
    */
   getHistory(filter?: {
     eventType?: EventType;
@@ -228,7 +336,15 @@ export class EventBus {
   }
 
   /**
-   * Clear history
+   * Clear all event history
+   *
+   * Removes all events from the history. Use with caution as this
+   * cannot be undone.
+   *
+   * @returns {void}
+   *
+   * @example
+   * bus.clearHistory();
    */
   clearHistory(): void {
     this.eventHistory = [];
@@ -236,7 +352,19 @@ export class EventBus {
   }
 
   /**
-   * Get statistics
+   * Get EventBus statistics
+   *
+   * Returns current metrics about the event bus state and performance.
+   *
+   * @returns {Object} Statistics object
+   * @returns {number} returns.totalSubscriptions - Total active subscriptions
+   * @returns {number} returns.queueSize - Number of pending events in queue
+   * @returns {number} returns.historySize - Number of events in history
+   *
+   * @example
+   * const stats = bus.getStats();
+   * console.log(`${stats.totalSubscriptions} active subscriptions`);
+   * console.log(`${stats.queueSize} events queued`);
    */
   getStats(): {
     totalSubscriptions: number;
@@ -255,7 +383,18 @@ export class EventBus {
 let eventBus: EventBus | null = null;
 
 /**
- * Initialize global event bus
+ * Initialize global event bus singleton
+ *
+ * Should be called once during application startup. Subsequent calls
+ * return the same instance.
+ *
+ * @returns {EventBus} The global EventBus instance
+ *
+ * @example
+ * // In application startup
+ * import { initializeEventBus } from './services/eventBus';
+ *
+ * initializeEventBus();
  */
 export function initializeEventBus(): EventBus {
   if (!eventBus) {
@@ -266,7 +405,17 @@ export function initializeEventBus(): EventBus {
 }
 
 /**
- * Get global event bus
+ * Get the global event bus instance
+ *
+ * Must be called after initializeEventBus() has been called.
+ *
+ * @returns {EventBus} The global EventBus instance
+ * @throws {Error} If EventBus has not been initialized
+ *
+ * @example
+ * import { getEventBus } from './services/eventBus';
+ *
+ * const bus = getEventBus();
  */
 export function getEventBus(): EventBus {
   if (!eventBus) {
@@ -276,7 +425,23 @@ export function getEventBus(): EventBus {
 }
 
 /**
- * Emit event using global event bus
+ * Emit event using the global event bus
+ *
+ * Convenience function for emitting events without accessing the bus directly.
+ * Timestamp is automatically added if not provided.
+ *
+ * @param {Omit<GameEvent, 'timestamp'>} event - Event to emit (without timestamp)
+ * @returns {Promise<void>} Resolves when event is queued
+ *
+ * @example
+ * import { emit } from './services/eventBus';
+ *
+ * await emit({
+ *   type: 'game:ended',
+ *   userId: 'user-123',
+ *   gameId: 'game-456',
+ *   data: { winnerId: 'player-1' }
+ * });
  */
 export async function emit(event: Omit<GameEvent, 'timestamp'>): Promise<void> {
   const bus = getEventBus();
@@ -287,7 +452,26 @@ export async function emit(event: Omit<GameEvent, 'timestamp'>): Promise<void> {
 }
 
 /**
- * Subscribe to events using global event bus
+ * Subscribe to events using the global event bus
+ *
+ * Convenience function for subscribing to events without accessing the bus directly.
+ *
+ * @param {EventType | '*'} eventType - Event type to subscribe to
+ * @param {EventHandler} handler - Handler function to execute
+ * @param {Object} options - Optional configuration
+ * @param {EventFilter} [options.filter] - Optional event filter
+ * @param {number} [options.priority] - Handler priority
+ * @returns {string} Subscription ID for later unsubscription
+ *
+ * @example
+ * import { on } from './services/eventBus';
+ *
+ * const subId = on('achievement:unlocked',
+ *   async (event) => {
+ *     await notifyUser(event.userId, event.data);
+ *   },
+ *   { priority: 10 }
+ * );
  */
 export function on(
   eventType: EventType | '*',
@@ -299,7 +483,19 @@ export function on(
 }
 
 /**
- * Unsubscribe from events using global event bus
+ * Unsubscribe from events using the global event bus
+ *
+ * Convenience function for unsubscribing without accessing the bus directly.
+ *
+ * @param {string} subscriptionId - Subscription ID returned from on()
+ * @returns {boolean} True if subscription was removed
+ *
+ * @example
+ * import { off } from './services/eventBus';
+ *
+ * const subId = on('game:ended', handler);
+ * // Later...
+ * off(subId);
  */
 export function off(subscriptionId: string): boolean {
   const bus = getEventBus();

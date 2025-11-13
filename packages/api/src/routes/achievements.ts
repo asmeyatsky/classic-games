@@ -20,7 +20,38 @@ const router = Router();
 const logger = getLogger();
 
 /**
- * GET /api/achievements - Get all achievements
+ * GET /api/achievements
+ * Get all available achievements in the system
+ *
+ * @route GET /api/achievements
+ * @returns {Object} 200 - List of all achievements
+ * @returns {number} 200.total - Total number of achievements
+ * @returns {Array} 200.achievements - Array of achievement objects
+ * @returns {string} 200.achievements[].id - Achievement unique identifier
+ * @returns {string} 200.achievements[].code - Achievement code (e.g., 'first_win')
+ * @returns {string} 200.achievements[].title - Human-readable achievement title
+ * @returns {string} 200.achievements[].description - Detailed achievement description
+ * @returns {string} 200.achievements[].icon - Icon URL for the achievement
+ * @returns {number} 200.achievements[].points - Points awarded for unlocking
+ *
+ * @example
+ * // Request
+ * GET /api/achievements
+ *
+ * // Response
+ * {
+ *   "total": 15,
+ *   "achievements": [
+ *     {
+ *       "id": "ach_1",
+ *       "code": "first_win",
+ *       "title": "First Win",
+ *       "description": "Win your first game",
+ *       "icon": "https://...",
+ *       "points": 10
+ *     }
+ *   ]
+ * }
  */
 router.get(
   '/',
@@ -56,7 +87,39 @@ router.get(
 );
 
 /**
- * GET /api/achievements/:code - Get achievement details
+ * GET /api/achievements/:code
+ * Get detailed information about a specific achievement
+ *
+ * @route GET /api/achievements/:code
+ * @param {string} code - Achievement code identifier (e.g., 'first_win')
+ * @returns {Object} 200 - Achievement details
+ * @returns {string} 200.id - Achievement unique identifier
+ * @returns {string} 200.code - Achievement code
+ * @returns {string} 200.title - Achievement title
+ * @returns {string} 200.description - Detailed description
+ * @returns {string} 200.icon - Icon URL
+ * @returns {number} 200.points - Points value
+ * @returns {string} 200.category - Achievement category (e.g., 'gameplay')
+ * @returns {number} 200.rarity - Rarity percentage (0-100)
+ *
+ * @returns {Object} 404 - Achievement not found
+ * @returns {string} 404.error - Error message
+ *
+ * @example
+ * // Request
+ * GET /api/achievements/first_win
+ *
+ * // Response
+ * {
+ *   "id": "ach_1",
+ *   "code": "first_win",
+ *   "title": "First Win",
+ *   "description": "Win your first game",
+ *   "icon": "https://...",
+ *   "points": 10,
+ *   "category": "gameplay",
+ *   "rarity": 85
+ * }
  */
 router.get(
   '/:code',
@@ -77,7 +140,39 @@ router.get(
 );
 
 /**
- * GET /api/achievements/leaderboard - Get achievement leaderboard
+ * GET /api/achievements/leaderboard/global
+ * Get the global achievement leaderboard showing top achievement hunters
+ *
+ * @route GET /api/achievements/leaderboard/global
+ * @query {number} [limit=50] - Max results to return (1-100)
+ * @returns {Object} 200 - Leaderboard data
+ * @returns {number} 200.limit - Results limit used
+ * @returns {number} 200.total - Total entries in leaderboard
+ * @returns {Array} 200.entries - Array of leaderboard entries
+ * @returns {number} 200.entries[].rank - Player rank (1-based)
+ * @returns {string} 200.entries[].userId - User unique identifier
+ * @returns {string} 200.entries[].username - Player username
+ * @returns {number} 200.entries[].unlockedCount - Achievements unlocked
+ * @returns {number} 200.entries[].totalPoints - Total achievement points
+ *
+ * @example
+ * // Request
+ * GET /api/achievements/leaderboard/global?limit=10
+ *
+ * // Response
+ * {
+ *   "limit": 10,
+ *   "total": 1000,
+ *   "entries": [
+ *     {
+ *       "rank": 1,
+ *       "userId": "user-id",
+ *       "username": "achievemaster",
+ *       "unlockedCount": 15,
+ *       "totalPoints": 500
+ *     }
+ *   ]
+ * }
  */
 router.get(
   '/leaderboard/global',
@@ -108,7 +203,38 @@ router.get(
 );
 
 /**
- * GET /api/achievements/user/:userId - Get user achievements
+ * GET /api/achievements/user/:userId
+ * Get achievements for a specific user with progress tracking
+ *
+ * @route GET /api/achievements/user/:userId
+ * @param {string} userId - User's unique identifier (UUID)
+ * @returns {Object} 200 - User achievements data
+ * @returns {string} 200.userId - The queried user ID
+ * @returns {Object} 200.stats - User's achievement statistics
+ * @returns {number} 200.stats.unlockedCount - Number of unlocked achievements
+ * @returns {number} 200.stats.totalAchievements - Total available achievements
+ * @returns {number} 200.stats.totalPoints - Total points earned
+ * @returns {number} 200.stats.percentComplete - Completion percentage (0-100)
+ * @returns {Array} 200.achievements - All achievements with user progress
+ * @returns {boolean} 200.achievements[].unlocked - Whether user has unlocked
+ * @returns {string} 200.achievements[].unlockedAt - ISO timestamp of unlock
+ * @returns {Object} 200.achievements[].progress - Progress towards unlock
+ *
+ * @example
+ * // Request
+ * GET /api/achievements/user/550e8400-e29b-41d4-a716-446655440000
+ *
+ * // Response
+ * {
+ *   "userId": "550e8400-e29b-41d4-a716-446655440000",
+ *   "stats": {
+ *     "unlockedCount": 5,
+ *     "totalAchievements": 15,
+ *     "totalPoints": 150,
+ *     "percentComplete": 33.33
+ *   },
+ *   "achievements": [...]
+ * }
  */
 router.get(
   '/user/:userId',
@@ -145,7 +271,27 @@ router.get(
 );
 
 /**
- * GET /api/me/achievements - Get current user achievements
+ * GET /api/achievements/me/achievements
+ * Get current authenticated user's achievements with full details
+ *
+ * Requires authentication. Returns the same data as GET /achievements/user/:userId
+ * but for the authenticated user automatically.
+ *
+ * @route GET /api/achievements/me/achievements
+ * @security Bearer Token required
+ * @returns {Object} 200 - Current user's achievements (same as /user/:userId)
+ *
+ * @example
+ * // Request
+ * GET /api/achievements/me/achievements
+ * Authorization: Bearer {token}
+ *
+ * // Response
+ * {
+ *   "userId": "current-user-id",
+ *   "stats": {...},
+ *   "achievements": [...]
+ * }
  */
 router.get(
   '/me/achievements',

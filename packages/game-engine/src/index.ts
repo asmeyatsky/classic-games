@@ -18,5 +18,9 @@ export { ScrabbleBoard } from './scrabble/ScrabbleBoard';
 export { ScrabbleDictionary } from './scrabble/Dictionary';
 export { TileBag } from './scrabble/TileBag';
 
+// AI Engine
+export * from './ai';
+export { AIPlayerService, createAIOpponent, createAIOpponents } from './ai/AIPlayerService';
+
 // Shared Types
 export * from './types';

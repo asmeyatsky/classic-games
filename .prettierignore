@@ -1,0 +1,14 @@
+node_modules
+.next
+dist
+build
+coverage
+*.pem
+.turbo
+.expo
+web-build
+*.mobileprovision
+*.jks
+*.p8
+*.p12
+*.key

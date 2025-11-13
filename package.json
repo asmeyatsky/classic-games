@@ -9,17 +9,28 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "lint": "turbo run lint",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "test": "turbo run test",
     "clean": "turbo run clean && rm -rf node_modules",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "mobile": "cd apps/mobile && npm start",
     "web": "cd apps/web && npm run dev",
-    "backend": "cd apps/backend && npm run dev"
+    "backend": "cd apps/backend && npm run dev",
+    "prepare": "husky install"
   },
   "devDependencies": {
-    "turbo": "^2.3.3",
+    "@eslint/js": "^9.39.1",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "^16.0.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
     "typescript": "^5.9.2"
   },
   "engines": {

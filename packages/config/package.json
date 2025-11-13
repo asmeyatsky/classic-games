@@ -1,0 +1,34 @@
+{
+  "name": "@classic-games/config",
+  "version": "1.0.0",
+  "description": "Shared configuration and constants",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./poker": {
+      "import": "./dist/games/poker.js"
+    },
+    "./backgammon": {
+      "import": "./dist/games/backgammon.js"
+    },
+    "./scrabble": {
+      "import": "./dist/games/scrabble.js"
+    },
+    "./ui": {
+      "import": "./dist/ui/index.js"
+    },
+    "./server": {
+      "import": "./dist/server.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

@@ -18,6 +18,9 @@ import userRoutes from './routes/users';
 import roomRoutes from './routes/rooms';
 import leaderboardRoutes from './routes/leaderboard';
 import gameRoutes from './routes/games';
+import achievementRoutes from './routes/achievements';
+import tournamentRoutes from './routes/tournaments';
+import socialRoutes from './routes/social';
 
 // Initialize logger
 const logger = initializeGlobalLogger({
@@ -136,6 +139,9 @@ function setupRoutes() {
   app.use('/api/rooms', roomRoutes);
   app.use('/api/games', gameRoutes);
   app.use('/api/leaderboard', leaderboardRoutes);
+  app.use('/api/achievements', achievementRoutes);
+  app.use('/api/tournaments', tournamentRoutes);
+  app.use('/api/social', socialRoutes);
 
   // 404 handler
   app.use(notFoundHandler);

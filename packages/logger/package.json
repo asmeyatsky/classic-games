@@ -1,0 +1,29 @@
+{
+  "name": "@classic-games/logger",
+  "version": "1.0.0",
+  "description": "Centralized logging and error handling for Classic Games",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./errors": {
+      "import": "./dist/errors.js"
+    },
+    "./logger": {
+      "import": "./dist/logger.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "pino": "^8.17.2",
+    "pino-pretty": "^10.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "typescript": "^5.9.2"
+  }
+}

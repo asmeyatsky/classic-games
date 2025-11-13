@@ -15,7 +15,7 @@ export { Dice } from './backgammon/Dice';
 export * from './scrabble';
 export { ScrabbleGame } from './scrabble/ScrabbleGame';
 export { ScrabbleBoard } from './scrabble/ScrabbleBoard';
-export { Dictionary } from './scrabble/Dictionary';
+export { ScrabbleDictionary } from './scrabble/Dictionary';
 export { TileBag } from './scrabble/TileBag';
 
 // Shared Types

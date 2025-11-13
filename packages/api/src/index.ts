@@ -3,6 +3,7 @@
  */
 
 import express, { Express, Request, Response } from 'express';
+import { createServer, Server as HTTPServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import { initializeDatabase } from '@classic-games/database';
@@ -12,6 +13,7 @@ import { initializeGlobalLogger, getLogger } from '@classic-games/logger';
 import { SERVER_CONFIG } from '@classic-games/config';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import { attachUserInfo, requireAuth } from '@classic-games/auth';
+import { initializeWebSocketServer } from './websocket';
 import userRoutes from './routes/users';
 import roomRoutes from './routes/rooms';
 import leaderboardRoutes from './routes/leaderboard';
@@ -151,12 +153,47 @@ async function start() {
     setupMiddleware();
     setupRoutes();
 
-    app.listen(PORT, () => {
+    // Create HTTP server for Express + WebSocket
+    const httpServer: HTTPServer = createServer(app);
+
+    // Initialize WebSocket server
+    const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
+      'http://localhost:3000',
+      'http://localhost:8081',
+    ];
+    const wsServer = initializeWebSocketServer(httpServer, corsOrigins);
+
+    // Start HTTP server
+    httpServer.listen(PORT, () => {
       logger.info(`Server listening on port ${PORT}`, {
         environment: process.env.NODE_ENV,
         nodeEnv: process.env.NODE_ENV,
+        websocket: 'enabled',
       });
     });
+
+    // Handle graceful shutdown
+    const gracefulShutdown = async (signal: string) => {
+      logger.info(`Received ${signal}, shutting down gracefully...`);
+      httpServer.close(async () => {
+        await wsServer.shutdown();
+        logger.info('Server shut down successfully');
+        process.exit(0);
+      });
+
+      // Force shutdown after 30 seconds
+      setTimeout(() => {
+        logger.error('Forced shutdown after timeout');
+        process.exit(1);
+      }, 30000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+    // Export WebSocket server for use in other modules
+    (app as any).wsServer = wsServer;
+    (app as any).httpServer = httpServer;
   } catch (error) {
     logger.fatal('Failed to start server', error);
     process.exit(1);

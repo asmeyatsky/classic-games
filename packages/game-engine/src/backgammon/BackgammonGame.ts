@@ -35,16 +35,16 @@ export class BackgammonGame {
     const board = new Array(24).fill(0);
 
     // White pieces (positive numbers)
-    board[23] = 2;  // Point 24
-    board[12] = 5;  // Point 13
-    board[7] = 3;   // Point 8
-    board[5] = 5;   // Point 6
+    board[23] = 2; // Point 24
+    board[12] = 5; // Point 13
+    board[7] = 3; // Point 8
+    board[5] = 5; // Point 6
 
     // Black pieces (negative numbers)
-    board[0] = -2;   // Point 1
-    board[11] = -5;  // Point 12
-    board[16] = -3;  // Point 17
-    board[18] = -5;  // Point 19
+    board[0] = -2; // Point 1
+    board[11] = -5; // Point 12
+    board[16] = -3; // Point 17
+    board[18] = -5; // Point 19
 
     return {
       board,
@@ -88,17 +88,14 @@ export class BackgammonGame {
 
     // Clone state and apply move
     const newBoard = [...this.state.board];
-    const newDiceUsed = [...this.state.diceUsed];
+    const newDiceUsed: [boolean, boolean] = [this.state.diceUsed[0], this.state.diceUsed[1]];
 
     // Remove piece from source
     const piece = newBoard[move.from] > 0 ? 1 : -1;
     newBoard[move.from] -= piece;
 
     // Handle capturing
-    if (
-      Math.abs(newBoard[move.to]) === 1 &&
-      Math.sign(newBoard[move.to]) !== Math.sign(piece)
-    ) {
+    if (Math.abs(newBoard[move.to]) === 1 && Math.sign(newBoard[move.to]) !== Math.sign(piece)) {
       // Send opponent piece to bar
       if (piece > 0) {
         this.state.bar.black++;
@@ -116,7 +113,8 @@ export class BackgammonGame {
 
     // Check for bearing off
     const bornOff = { ...this.state.bornOff };
-    if (move.to === 25) { // Bearing off position
+    if (move.to === 25) {
+      // Bearing off position
       if (piece > 0) bornOff.white++;
       else bornOff.black++;
     }
@@ -160,10 +158,7 @@ export class BackgammonGame {
       const distance = this.state.dice[die];
 
       for (let point = 0; point < 24; point++) {
-        if (
-          (isWhite && this.state.board[point] > 0) ||
-          (!isWhite && this.state.board[point] < 0)
-        ) {
+        if ((isWhite && this.state.board[point] > 0) || (!isWhite && this.state.board[point] < 0)) {
           const destination = isWhite ? point + distance : point - distance;
 
           if (this.isLegalMove(point, destination, isWhite)) {
@@ -215,10 +210,7 @@ export class BackgammonGame {
     const destination = this.state.board[to];
 
     // Can't move to point with 2+ opponent pieces
-    if (
-      (isWhite && destination < -1) ||
-      (!isWhite && destination > 1)
-    ) {
+    if ((isWhite && destination < -1) || (!isWhite && destination > 1)) {
       return false;
     }
 

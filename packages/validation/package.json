@@ -1,0 +1,30 @@
+{
+  "name": "@classic-games/validation",
+  "version": "1.0.0",
+  "description": "Request and response validation schemas using Zod",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./game": {
+      "import": "./dist/game.js"
+    },
+    "./user": {
+      "import": "./dist/user.js"
+    },
+    "./room": {
+      "import": "./dist/room.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

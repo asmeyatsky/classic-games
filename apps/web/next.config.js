@@ -21,7 +21,6 @@ const nextConfig = {
       '@classic-games/utils',
       '@classic-games/audio',
     ],
-    turbopack: false, // Use webpack for more control over code splitting
   },
 
   // Packages that need transpilation from monorepo

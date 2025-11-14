@@ -4,89 +4,62 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <main style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem',
-      backgroundColor: '#0f172a',
-    }}>
-      <div style={{ textAlign: 'center', maxWidth: '56rem' }}>
-        <h1 style={{
-          fontSize: '3.75rem',
-          fontWeight: 'bold',
-          marginBottom: '1.5rem',
-          background: 'linear-gradient(to right, #60a5fa, #a855f7)',
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          color: 'transparent',
-        }}>
-          Classic Games
-        </h1>
-        <p style={{
-          fontSize: '1.25rem',
-          color: '#d1d5db',
-          marginBottom: '3rem',
-        }}>
-          World-class 3D gaming with realistic graphics and online multiplayer
-        </p>
+    <main className="min-h-screen bg-gradient-game flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-4xl">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-5xl md:text-6xl font-bold mb-4 text-gradient">Classic Games</h1>
+          <p className="text-xl text-gray-300 mb-2">
+            World-class 3D gaming with realistic graphics
+          </p>
+          <p className="text-lg text-gray-400">Play against intelligent AI opponents</p>
+        </div>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '1.5rem',
-          marginBottom: '3rem',
-        }}>
+        {/* Game Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <GameCard
             title="Poker"
-            description="Texas Hold'em with realistic 3D cards and chips"
+            subtitle="Texas Hold'em"
+            description="Play realistic 3D poker with AI opponents and strategy-based gameplay"
             href="/games/poker"
             icon="🃏"
+            color="from-blue-600 to-blue-400"
           />
           <GameCard
             title="Backgammon"
-            description="Classic board game with physics-based dice"
+            subtitle="Classic Board Game"
+            description="Master the ancient game of strategy with physics-based dice"
             href="/games/backgammon"
             icon="🎲"
-            disabled
+            color="from-amber-600 to-amber-400"
           />
           <GameCard
             title="Scrabble"
-            description="Word game with 3D tiles and full dictionary"
+            subtitle="Word Challenge"
+            description="Challenge your vocabulary with 3D tiles and intelligent word validation"
             href="/games/scrabble"
             icon="🔤"
-            disabled
+            color="from-green-600 to-green-400"
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          <Link href="/games/poker" style={{
-            padding: '0.75rem 1.5rem',
-            backgroundColor: '#3b82f6',
-            color: 'white',
-            borderRadius: '0.5rem',
-            textDecoration: 'none',
-            fontWeight: 'bold',
-          }}>
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <Link
+            href="/games/poker"
+            className="px-8 py-3 bg-primary hover:bg-primary-light text-white font-bold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 text-center"
+          >
             Play Poker Now
           </Link>
-          <Link href="/lobby" style={{
-            padding: '0.75rem 1.5rem',
-            backgroundColor: 'transparent',
-            color: '#3b82f6',
-            border: '2px solid #3b82f6',
-            borderRadius: '0.5rem',
-            textDecoration: 'none',
-            fontWeight: 'bold',
-          }}>
+          <button className="px-8 py-3 bg-surface hover:bg-surface-hover text-primary font-bold rounded-lg transition-all duration-200 border-2 border-primary">
             Multiplayer Lobby
-          </Link>
+          </button>
         </div>
 
-        <div style={{ marginTop: '3rem', fontSize: '0.875rem', color: '#9ca3af' }}>
+        {/* Features */}
+        <div className="text-center space-y-2 text-sm text-gray-400">
           <p>✨ Realistic 3D Graphics • 🌐 Cross-Platform • 🎮 Online Multiplayer</p>
+          <p>🤖 Intelligent AI • 🎨 Stunning Visuals • ⚡ Optimized Performance</p>
         </div>
       </div>
     </main>
@@ -95,65 +68,41 @@ export default function Home() {
 
 interface GameCardProps {
   title: string;
+  subtitle: string;
   description: string;
   href: string;
   icon: string;
-  disabled?: boolean;
+  color: string;
 }
 
-function GameCard({ title, description, href, icon, disabled }: GameCardProps) {
-  const cardStyle = {
-    position: 'relative' as const,
-    padding: '1.5rem',
-    borderRadius: '0.75rem',
-    backgroundColor: '#1e293b',
-    border: '1px solid #374151',
-    transition: 'all 0.3s',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.5 : 1,
-  };
-
-  const Card = (
-    <div style={cardStyle}>
-      <div style={{
-        fontSize: '3rem',
-        marginBottom: '1rem',
-        lineHeight: '1',
-      }}>
-        {icon}
-      </div>
-      <h2 style={{
-        fontSize: '1.5rem',
-        fontWeight: 'bold',
-        marginBottom: '0.5rem',
-        color: 'white',
-      }}>
-        {title}
-      </h2>
-      <p style={{ color: '#9ca3af' }}>{description}</p>
-      {disabled && (
-        <div style={{
-          position: 'absolute',
-          top: '1rem',
-          right: '1rem',
-          backgroundColor: '#eab308',
-          color: 'black',
-          fontSize: '0.75rem',
-          fontWeight: 'bold',
-          padding: '0.25rem 0.5rem',
-          borderRadius: '0.25rem',
-        }}>
-          Coming Soon
+function GameCard({ title, subtitle, description, href, icon, color }: GameCardProps) {
+  return (
+    <Link href={href}>
+      <div className="h-full p-6 rounded-lg bg-surface hover:bg-surface-hover border border-gray-700 hover:border-gray-600 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg cursor-pointer group">
+        {/* Icon */}
+        <div className="text-5xl mb-4 text-center group-hover:scale-110 transition-transform duration-300">
+          {icon}
         </div>
-      )}
-    </div>
-  );
 
-  return disabled ? (
-    Card
-  ) : (
-    <Link href={href} style={{ display: 'block', textDecoration: 'none' }}>
-      {Card}
+        {/* Title and Subtitle */}
+        <h2 className="text-2xl font-bold text-white mb-1 text-center">{title}</h2>
+        <p className="text-sm text-gray-400 text-center mb-3">{subtitle}</p>
+
+        {/* Divider */}
+        <div className="h-0.5 bg-gradient-to-r via-gray-600 mb-4"></div>
+
+        {/* Description */}
+        <p className="text-gray-300 text-center text-sm leading-relaxed mb-4">{description}</p>
+
+        {/* CTA */}
+        <div className="text-center">
+          <span
+            className={`inline-block px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r ${color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+          >
+            Play Now →
+          </span>
+        </div>
+      </div>
     </Link>
   );
 }

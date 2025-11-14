@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@classic-games/game-engine": "*",
+    "@classic-games/i18n": "*",
     "@react-three/drei": "^9.117.3",
     "@react-three/fiber": "^8.17.10",
     "next": "^13.5.0",

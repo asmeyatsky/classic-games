@@ -68,8 +68,18 @@ export default function BackgammonPage() {
             href="/"
             className="flex items-center gap-2 text-amber-200 hover:text-white transition-colors group"
           >
-            <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="w-5 h-5 group-hover:-translate-x-1 transition-transform"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Back to Games
           </Link>
@@ -123,7 +133,7 @@ export default function BackgammonPage() {
           <div className="relative mb-12">
             <div className="bg-gradient-to-br from-amber-800/40 to-amber-700/40 backdrop-blur-sm rounded-3xl p-8 border border-amber-700/30 shadow-2xl">
               {/* Backgammon Board */}
-              <div className="grid grid-cols-13 gap-1 mb-8">
+              <div className="grid gap-1 mb-8" style={{ gridTemplateColumns: 'repeat(12, 1fr)' }}>
                 {Array(24)
                   .fill(null)
                   .map((_, idx) => (
@@ -136,8 +146,8 @@ export default function BackgammonPage() {
                             ? 'bg-gradient-to-b from-amber-900 to-amber-950 border-amber-800'
                             : 'bg-gradient-to-b from-red-900 to-red-950 border-red-800'
                           : idx % 2 === 0
-                          ? 'bg-gradient-to-b from-red-900 to-red-950 border-red-800'
-                          : 'bg-gradient-to-b from-amber-900 to-amber-950 border-amber-800'
+                            ? 'bg-gradient-to-b from-red-900 to-red-950 border-red-800'
+                            : 'bg-gradient-to-b from-amber-900 to-amber-950 border-amber-800'
                       }`}
                     >
                       <span className="text-xs text-amber-400 font-bold">{idx + 1}</span>
@@ -162,12 +172,16 @@ export default function BackgammonPage() {
               {/* Home Areas */}
               <div className="grid grid-cols-2 gap-12">
                 <div className="bg-amber-900/30 rounded-xl p-6 border border-amber-700/50">
-                  <h3 className="text-sm uppercase tracking-widest text-amber-300 mb-4">⚪ White Home</h3>
+                  <h3 className="text-sm uppercase tracking-widest text-amber-300 mb-4">
+                    ⚪ White Home
+                  </h3>
                   <p className="text-4xl font-black text-yellow-300">{whiteHome}/15</p>
                   <p className="text-xs text-amber-400 mt-2">Checkers Borne Off</p>
                 </div>
                 <div className="bg-amber-900/30 rounded-xl p-6 border border-amber-700/50 text-right">
-                  <h3 className="text-sm uppercase tracking-widest text-amber-300 mb-4">⚫ Black Home</h3>
+                  <h3 className="text-sm uppercase tracking-widest text-amber-300 mb-4">
+                    ⚫ Black Home
+                  </h3>
                   <p className="text-4xl font-black text-gray-300">{blackHome}/15</p>
                   <p className="text-xs text-amber-400 mt-2">Checkers Borne Off</p>
                 </div>
@@ -270,7 +284,9 @@ export default function BackgammonPage() {
 
                 <div className="flex-1 max-w-md">
                   <div className="bg-amber-900/50 rounded-xl p-4 border border-amber-700/50">
-                    <p className="text-xs text-amber-300 uppercase tracking-wider mb-2">Move Instructions</p>
+                    <p className="text-xs text-amber-300 uppercase tracking-wider mb-2">
+                      Move Instructions
+                    </p>
                     <p className="text-sm text-amber-100">
                       Select a checker and click on a valid destination point to move it.
                     </p>

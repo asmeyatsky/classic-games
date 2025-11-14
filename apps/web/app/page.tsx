@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 
 export default function Home() {
@@ -8,7 +6,9 @@ export default function Home() {
       <div className="w-full max-w-4xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4 text-gradient">Classic Games</h1>
+          <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
+            Classic Games
+          </h1>
           <p className="text-xl text-gray-300 mb-2">
             World-class 3D gaming with realistic graphics
           </p>

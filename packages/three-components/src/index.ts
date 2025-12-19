@@ -6,4 +6,13 @@ export * from './common';
 
 // Advanced materials and lighting
 export * from './materials/PBRMaterials';
-export * from './lighting/AdvancedLighting';
+// Export lighting without LightingSetup to avoid conflict with common
+export {
+  setupLighting,
+  createGameLighting,
+  LightController,
+  configureRendererForPBR,
+  createLight,
+  advancedLightingProfiles,
+} from './lighting/AdvancedLighting';
+export type { LightConfig } from './lighting/AdvancedLighting';

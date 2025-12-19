@@ -40,7 +40,7 @@ export {
   type GameStartRequest,
   type GameActionRequest,
   type GameStateResponse,
-} from './game';
+} from './game.js';
 
 // User Validation Schemas
 export {
@@ -62,7 +62,7 @@ export {
   type FriendRequest,
   type Achievement,
   type LeaderboardEntry,
-} from './user';
+} from './user.js';
 
 // Room Validation Schemas
 export {
@@ -90,12 +90,17 @@ export {
   type RoomEvent,
   type SpectateRoom,
   type UpdateRoomSettings,
-} from './room';
+} from './room.js';
 
 // Utilities
-export function validateRequest<T>(schema: any, data: unknown): { success: boolean; data?: T; errors?: any } {
+export function validateRequest<T>(
+  schema: any,
+  data: unknown
+): { success: boolean; data?: T; errors?: any } {
   const result = schema.safeParse(data);
-  return result.success ? { success: true, data: result.data } : { success: false, errors: result.error?.flatten() };
+  return result.success
+    ? { success: true, data: result.data }
+    : { success: false, errors: result.error?.flatten() };
 }
 
 export function validateRequestThrow<T>(schema: any, data: unknown): T {

@@ -48,7 +48,7 @@ const nextConfig = {
       '@classic-games/shared-ui': path.resolve(__dirname, '../../packages/shared-ui/src'),
       '@classic-games/three-components': path.resolve(
         __dirname,
-        '../../packages/three-components/src'
+        '../../packages/three-components/dist'
       ),
       '@classic-games/audio': path.resolve(__dirname, '../../packages/audio/src'),
       '@classic-games/utils': path.resolve(__dirname, '../../packages/utils/src'),

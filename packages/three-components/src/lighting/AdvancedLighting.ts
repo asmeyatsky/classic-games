@@ -291,8 +291,8 @@ export function configureRendererForPBR(
   // Use PCFShadowMap for better quality (default)
   // renderer.shadowMap.type = PCFShadowMap;
 
-  // Enable physically correct lighting
-  renderer.physicallyCorrectLights = false; // Deprecated in newer THREE.js
+  // Note: physicallyCorrectLights is deprecated in newer THREE.js versions
+  // Modern THREE.js uses physically correct lighting by default
 }
 
 /**

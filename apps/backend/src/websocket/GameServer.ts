@@ -75,10 +75,12 @@ export class GameServer extends EventEmitter {
           this.handleMessage(ws, data);
         } catch (error) {
           console.error('Invalid message format:', error);
-          ws.send(JSON.stringify({
-            type: 'error',
-            message: 'Invalid message format'
-          }));
+          ws.send(
+            JSON.stringify({
+              type: 'error',
+              message: 'Invalid message format',
+            })
+          );
         }
       });
 
@@ -86,7 +88,7 @@ export class GameServer extends EventEmitter {
         this.handleClientDisconnect(ws);
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', (error: Error) => {
         console.error('WebSocket error:', error);
       });
     });
@@ -116,7 +118,7 @@ export class GameServer extends EventEmitter {
           type: 'chat',
           playerId,
           message: payload.message,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
         break;
 
@@ -144,10 +146,12 @@ export class GameServer extends EventEmitter {
 
     // Check room capacity
     if (room.players.length >= room.maxPlayers) {
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Room is full'
-      }));
+      ws.send(
+        JSON.stringify({
+          type: 'error',
+          message: 'Room is full',
+        })
+      );
       return;
     }
 
@@ -157,7 +161,7 @@ export class GameServer extends EventEmitter {
       name: playerName,
       ws,
       roomId,
-      lastActivity: Date.now()
+      lastActivity: Date.now(),
     };
 
     // Add to tracking
@@ -171,20 +175,22 @@ export class GameServer extends EventEmitter {
       playerId,
       playerName,
       totalPlayers: room.players.length,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // Send current game state to new player
-    ws.send(JSON.stringify({
-      type: 'state',
-      roomId,
-      gameState: room.gameState,
-      players: room.players.map(p => ({
-        id: p.id,
-        name: p.name,
-        isAI: p.isAI
-      }))
-    }));
+    ws.send(
+      JSON.stringify({
+        type: 'state',
+        roomId,
+        gameState: room.gameState,
+        players: room.players.map((p) => ({
+          id: p.id,
+          name: p.name,
+          isAI: p.isAI,
+        })),
+      })
+    );
 
     // Check if room is full and game can start
     if (room.players.length === room.maxPlayers) {
@@ -208,10 +214,12 @@ export class GameServer extends EventEmitter {
     const isValidMove = this.validateMove(room.gameType, room.gameState, payload);
 
     if (!isValidMove) {
-      player.ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Invalid move'
-      }));
+      player.ws.send(
+        JSON.stringify({
+          type: 'error',
+          message: 'Invalid move',
+        })
+      );
       return;
     }
 
@@ -227,8 +235,8 @@ export class GameServer extends EventEmitter {
       lastMove: {
         playerId,
         move: payload,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
 
     // Update player activity
@@ -240,7 +248,7 @@ export class GameServer extends EventEmitter {
       this.broadcastToRoom(roomId, {
         type: 'gameEnd',
         result: gameResult,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       room.isActive = false;
     }
@@ -263,7 +271,7 @@ export class GameServer extends EventEmitter {
           type: 'action',
           action,
           playerId,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
         break;
 
@@ -296,7 +304,7 @@ export class GameServer extends EventEmitter {
 
     if (room) {
       // Remove from room
-      room.players = room.players.filter(p => p.id !== disconnectedPlayer!.id);
+      room.players = room.players.filter((p) => p.id !== disconnectedPlayer!.id);
       room.updatedAt = Date.now();
 
       // Notify remaining players
@@ -305,7 +313,7 @@ export class GameServer extends EventEmitter {
         playerId: disconnectedPlayer.id,
         playerName: disconnectedPlayer.name,
         totalPlayers: room.players.length,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       // End game if only one player left
@@ -314,7 +322,7 @@ export class GameServer extends EventEmitter {
         this.broadcastToRoom(roomId, {
           type: 'gameEnd',
           reason: 'Opponent disconnected',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
 
@@ -351,16 +359,18 @@ export class GameServer extends EventEmitter {
     const room = this.rooms.get(roomId);
     if (!room) return;
 
-    ws.send(JSON.stringify({
-      type: 'state',
-      roomId,
-      gameState: room.gameState,
-      players: room.players.map(p => ({
-        id: p.id,
-        name: p.name,
-        isAI: p.isAI
-      }))
-    }));
+    ws.send(
+      JSON.stringify({
+        type: 'state',
+        roomId,
+        gameState: room.gameState,
+        players: room.players.map((p) => ({
+          id: p.id,
+          name: p.name,
+          isAI: p.isAI,
+        })),
+      })
+    );
   }
 
   /**
@@ -377,7 +387,7 @@ export class GameServer extends EventEmitter {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       isActive: false,
-      maxPlayers
+      maxPlayers,
     };
 
     this.rooms.set(roomId, room);
@@ -394,7 +404,12 @@ export class GameServer extends EventEmitter {
       case 'backgammon':
         return { board: [], dice: [0, 0], currentPlayer: 'white' };
       case 'scrabble':
-        return { board: Array(15).fill(null).map(() => Array(15).fill(null)), tilesRemaining: 100 };
+        return {
+          board: Array(15)
+            .fill(null)
+            .map(() => Array(15).fill(null)),
+          tilesRemaining: 100,
+        };
       default:
         return {};
     }
@@ -414,7 +429,7 @@ export class GameServer extends EventEmitter {
       type: 'gameStart',
       gameType: room.gameType,
       gameState: room.gameState,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     console.log(`Game started in room ${roomId}`);
@@ -458,8 +473,8 @@ export class GameServer extends EventEmitter {
     this.broadcastToRoom(roomId, {
       type: 'gameEnd',
       reason: 'Surrender',
-      winner: room.players.find(p => p.id !== playerId)?.id,
-      timestamp: Date.now()
+      winner: room.players.find((p) => p.id !== playerId)?.id,
+      timestamp: Date.now(),
     });
   }
 
@@ -474,7 +489,7 @@ export class GameServer extends EventEmitter {
       type: 'action',
       action: 'timeout',
       playerId,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -509,10 +524,10 @@ export class GameServer extends EventEmitter {
       maxPlayers: room.maxPlayers,
       isActive: room.isActive,
       createdAt: room.createdAt,
-      players: room.players.map(p => ({
+      players: room.players.map((p) => ({
         id: p.id,
-        name: p.name
-      }))
+        name: p.name,
+      })),
     };
   }
 
@@ -520,12 +535,12 @@ export class GameServer extends EventEmitter {
    * Get all active rooms
    */
   public getAllRooms(): any[] {
-    return Array.from(this.rooms.values()).map(room => ({
+    return Array.from(this.rooms.values()).map((room) => ({
       id: room.id,
       gameType: room.gameType,
       playerCount: room.players.length,
       maxPlayers: room.maxPlayers,
-      isActive: room.isActive
+      isActive: room.isActive,
     }));
   }
 

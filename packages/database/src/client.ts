@@ -78,16 +78,14 @@ export async function query<T = any>(sql: string, values?: any[]): Promise<T[]> 
 /**
  * Begin transaction
  */
-export async function transaction<T>(
-  callback: (sql: Sql) => Promise<T>
-): Promise<T> {
+export async function transaction<T>(callback: (sql: Sql) => Promise<T>): Promise<T> {
   const db = getDatabase();
   const logger = getLogger();
 
   try {
     const result = await db.begin(callback);
     logger.debug('Transaction committed');
-    return result;
+    return result as T;
   } catch (error) {
     logger.error('Transaction failed', error);
     throw error;
@@ -113,7 +111,10 @@ export async function closeDatabase(): Promise<void> {
 /**
  * Get database health status
  */
-export async function getHealthStatus(): Promise<{ status: 'healthy' | 'unhealthy'; latency: number }> {
+export async function getHealthStatus(): Promise<{
+  status: 'healthy' | 'unhealthy';
+  latency: number;
+}> {
   try {
     const start = performance.now();
     await query('SELECT 1');

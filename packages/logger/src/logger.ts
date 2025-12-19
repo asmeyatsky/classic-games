@@ -6,7 +6,7 @@
  */
 
 import pino from 'pino';
-import { isClassicGamesError, extractErrorDetails } from './errors';
+import { isClassicGamesError, extractErrorDetails } from './errors.js';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
@@ -28,7 +28,7 @@ export function createLogger(options: LoggerOptions) {
   const environment = options.environment || process.env.NODE_ENV || 'development';
   const isDevelopment = environment === 'development';
 
-  const pinoLogger = pino({
+  const pinoLogger = (pino as any)({
     name: options.name,
     level: options.level || (isDevelopment ? 'debug' : 'info'),
     transport: isDevelopment
@@ -42,7 +42,7 @@ export function createLogger(options: LoggerOptions) {
         }
       : undefined,
     formatters: {
-      level: (label) => ({
+      level: (label: string) => ({
         level: label,
       }),
     },
@@ -132,7 +132,13 @@ export class StructuredLogger {
   /**
    * Log HTTP response
    */
-  logResponse(method: string, path: string, statusCode: number, duration: number, context?: LogContext) {
+  logResponse(
+    method: string,
+    path: string,
+    statusCode: number,
+    duration: number,
+    context?: LogContext
+  ) {
     const level = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
 
     this.logger[level](
@@ -152,12 +158,7 @@ export class StructuredLogger {
   /**
    * Log game event
    */
-  logGameEvent(
-    gameId: string,
-    event: string,
-    playerId?: string,
-    context?: LogContext
-  ) {
+  logGameEvent(gameId: string, event: string, playerId?: string, context?: LogContext) {
     this.info(`Game Event: ${event}`, {
       game: {
         id: gameId,
@@ -171,12 +172,7 @@ export class StructuredLogger {
   /**
    * Log player action
    */
-  logPlayerAction(
-    gameId: string,
-    playerId: string,
-    action: string,
-    context?: LogContext
-  ) {
+  logPlayerAction(gameId: string, playerId: string, action: string, context?: LogContext) {
     this.info(`Player Action: ${action}`, {
       game: {
         id: gameId,

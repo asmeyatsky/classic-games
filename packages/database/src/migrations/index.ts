@@ -2,7 +2,7 @@
  * Database Migration Management
  */
 
-import { Sql } from '../client';
+import { Sql } from '../client.js';
 import { getLogger } from '@classic-games/logger';
 
 interface Migration {
@@ -15,11 +15,11 @@ const migrations: Migration[] = [
   {
     name: '001_initial_schema',
     up: async (db) => {
-      const { createAllTables } = await import('../schemas');
+      const { createAllTables } = await import('../schemas/index.js');
       await createAllTables(db);
     },
     down: async (db) => {
-      const { dropAllTables } = await import('../schemas');
+      const { dropAllTables } = await import('../schemas/index.js');
       await dropAllTables(db);
     },
   },

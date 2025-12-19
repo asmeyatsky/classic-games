@@ -2,9 +2,9 @@
  * Database Schemas - Create all tables and indexes
  */
 
-import { Sql } from '../client';
-import * as users from './users';
-import * as games from './games';
+import { Sql } from '../client.js';
+import * as users from './users.js';
+import * as games from './games.js';
 
 /**
  * Create all database tables and indexes
@@ -38,5 +38,5 @@ export async function dropAllTables(db: Sql): Promise<void> {
   console.warn('All tables dropped');
 }
 
-export * from './users';
-export * from './games';
+export * from './users.js';
+export * from './games.js';

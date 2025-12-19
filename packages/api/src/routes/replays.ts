@@ -5,7 +5,8 @@
 
 import { Router, Request, Response } from 'express';
 import { getDatabase } from '@classic-games/database';
-import { requireAuth, AuthenticatedRequest } from '@classic-games/auth';
+import { requireAuth as _requireAuth, AuthenticatedRequest } from '@classic-games/auth';
+const requireAuth = _requireAuth as any;
 import { getLogger } from '@classic-games/logger';
 import { validateParams, validateQuery } from '../middleware/validation';
 import { asyncHandler } from '../middleware/error';

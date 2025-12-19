@@ -39,12 +39,7 @@ const FACE_ROTATIONS: Record<number, [number, number, number]> = {
   6: [Math.PI / 2, 0, 0],
 };
 
-export const Dice3D: React.FC<Dice3DProps> = ({
-  value,
-  position,
-  rolling,
-  onRollComplete,
-}) => {
+export const Dice3D: React.FC<Dice3DProps> = ({ value, position, rolling, onRollComplete }) => {
   const diceRef = useRef<Group>(null);
   const [targetRotation, setTargetRotation] = React.useState(FACE_ROTATIONS[value]);
   const [velocity, setVelocity] = React.useState({ x: 0, y: 0, z: 0 });
@@ -105,51 +100,83 @@ export const Dice3D: React.FC<Dice3DProps> = ({
 
   return (
     <group ref={diceRef} position={position}>
-      {/* Main cube */}
+      {/* Main cube with enhanced materials */}
       <mesh>
         <boxGeometry args={[DICE_SIZE, DICE_SIZE, DICE_SIZE]} />
-        <meshStandardMaterial
-          color="#FFFFFF"
-          roughness={0.4}
-          metalness={0.1}
-        />
+        <meshStandardMaterial color="#FFFFFF" roughness={0.15} metalness={0.4} />
       </mesh>
 
-      {/* Dice faces (simple colored indicators) */}
+      {/* Dice faces (simple colored indicators) with enhanced materials */}
       {/* Face 1: Right - Red dot */}
       <mesh position={[DICE_SIZE / 2 + 0.001, 0, 0]}>
         <planeGeometry args={[0.01, 0.01]} />
-        <meshStandardMaterial color="#DC2626" emissive="#DC2626" emissiveIntensity={0.5} />
+        <meshStandardMaterial
+          color="#DC2626"
+          emissive="#DC2626"
+          emissiveIntensity={0.9}
+          roughness={0.05}
+          metalness={0.95}
+        />
       </mesh>
 
       {/* Face 2: Left - Blue dot */}
       <mesh position={[-DICE_SIZE / 2 - 0.001, 0, 0]}>
         <planeGeometry args={[0.01, 0.01]} />
-        <meshStandardMaterial color="#0066CC" emissive="#0066CC" emissiveIntensity={0.5} />
+        <meshStandardMaterial
+          color="#0066CC"
+          emissive="#0066CC"
+          emissiveIntensity={0.9}
+          roughness={0.05}
+          metalness={0.95}
+        />
       </mesh>
 
       {/* Face 3: Top - Green dot */}
       <mesh position={[0, DICE_SIZE / 2 + 0.001, 0]}>
         <planeGeometry args={[0.01, 0.01]} />
-        <meshStandardMaterial color="#10B981" emissive="#10B981" emissiveIntensity={0.5} />
+        <meshStandardMaterial
+          color="#10B981"
+          emissive="#10B981"
+          emissiveIntensity={0.9}
+          roughness={0.05}
+          metalness={0.95}
+        />
       </mesh>
 
       {/* Face 4: Bottom - Yellow dot */}
       <mesh position={[0, -DICE_SIZE / 2 - 0.001, 0]}>
         <planeGeometry args={[0.01, 0.01]} />
-        <meshStandardMaterial color="#F59E0B" emissive="#F59E0B" emissiveIntensity={0.5} />
+        <meshStandardMaterial
+          color="#F59E0B"
+          emissive="#F59E0B"
+          emissiveIntensity={0.9}
+          roughness={0.05}
+          metalness={0.95}
+        />
       </mesh>
 
       {/* Face 5: Front - Purple dot */}
       <mesh position={[0, 0, DICE_SIZE / 2 + 0.001]}>
         <planeGeometry args={[0.01, 0.01]} />
-        <meshStandardMaterial color="#A855F7" emissive="#A855F7" emissiveIntensity={0.5} />
+        <meshStandardMaterial
+          color="#A855F7"
+          emissive="#A855F7"
+          emissiveIntensity={0.9}
+          roughness={0.05}
+          metalness={0.95}
+        />
       </mesh>
 
       {/* Face 6: Back - Pink dot */}
       <mesh position={[0, 0, -DICE_SIZE / 2 - 0.001]}>
         <planeGeometry args={[0.01, 0.01]} />
-        <meshStandardMaterial color="#EC4899" emissive="#EC4899" emissiveIntensity={0.5} />
+        <meshStandardMaterial
+          color="#EC4899"
+          emissive="#EC4899"
+          emissiveIntensity={0.9}
+          roughness={0.05}
+          metalness={0.95}
+        />
       </mesh>
 
       {/* Pip indicators (dots on faces for value 1-6) */}
@@ -189,35 +216,35 @@ export const DiceCup: React.FC<DiceCupProps> = ({ position, shaking }) => {
 
   return (
     <group ref={cupRef} position={position}>
-      {/* Cup body */}
+      {/* Cup body with enhanced materials */}
       <mesh position={[0, 0, 0]}>
-        <coneGeometry args={[0.06, 0.1, 16]} />
+        <coneGeometry args={[0.06, 0.1, 32]} />
         <meshStandardMaterial
           color="#654321"
-          roughness={0.8}
-          metalness={0.1}
+          roughness={0.4}
+          metalness={0.4}
+          emissive="#1C1206"
+          emissiveIntensity={0.1}
         />
       </mesh>
 
-      {/* Cup rim */}
+      {/* Cup rim with enhanced materials */}
       <mesh position={[0, 0.05, 0]}>
-        <torusGeometry args={[0.062, 0.003, 8, 16]} />
-        <meshStandardMaterial
-          color="#8B4513"
-          roughness={0.7}
-          metalness={0.2}
-        />
+        <torusGeometry args={[0.062, 0.003, 16, 32]} />
+        <meshStandardMaterial color="#8B4513" roughness={0.3} metalness={0.6} />
       </mesh>
 
-      {/* Interior highlight */}
+      {/* Interior highlight with enhanced materials */}
       <mesh position={[0, 0.02, 0]}>
-        <cylinderGeometry args={[0.055, 0.04, 0.08, 16]} />
+        <cylinderGeometry args={[0.055, 0.04, 0.08, 32]} />
         <meshStandardMaterial
           color="#4B2F1A"
-          roughness={0.9}
-          metalness={0}
+          roughness={0.6}
+          metalness={0.3}
           transparent
-          opacity={0.6}
+          opacity={0.4}
+          emissive="#4B2F1A"
+          emissiveIntensity={0.15}
         />
       </mesh>
     </group>
@@ -232,10 +259,7 @@ export interface DiceRollSequenceProps {
   onComplete?: (value1: number, value2: number) => void;
 }
 
-export const DiceRollSequence: React.FC<DiceRollSequenceProps> = ({
-  rolling,
-  onComplete,
-}) => {
+export const DiceRollSequence: React.FC<DiceRollSequenceProps> = ({ rolling, onComplete }) => {
   const [dice1Value, setDice1Value] = React.useState(1);
   const [dice2Value, setDice2Value] = React.useState(1);
   const [dice1Complete, setDice1Complete] = React.useState(false);

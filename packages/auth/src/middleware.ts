@@ -3,7 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { verifyIdToken } from './server';
+import { verifyIdToken } from './server.js';
 import { AuthenticationError, AuthorizationError } from '@classic-games/logger';
 import { getLogger } from '@classic-games/logger';
 
@@ -23,11 +23,7 @@ export interface AuthenticatedRequest extends Request {
 /**
  * Middleware to verify Firebase ID token
  */
-export function authMiddleware(
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-): void {
+export function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   const logger = getLogger();
 
   try {
@@ -44,7 +40,7 @@ export function authMiddleware(
     // Token will be verified by verifyTokenMiddleware
     next();
   } catch (error) {
-    logger.warn('Auth middleware error', error);
+    logger.warn('Auth middleware error', error as any);
     res.status(401).json({ error: 'Unauthorized' });
   }
 }
@@ -75,7 +71,7 @@ export async function verifyTokenMiddleware(
 
     next();
   } catch (error) {
-    logger.warn('Token verification failed', error);
+    logger.warn('Token verification failed', error as any);
     res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
@@ -118,7 +114,7 @@ export function requireRole(roles: string[]) {
     const hasRole = userRoles.some((role) => roles.includes(role));
 
     if (!hasRole) {
-      logger.warn('Insufficient permissions', undefined, {
+      logger.warn('Insufficient permissions', {
         uid: req.user.uid,
         requiredRoles: roles,
         userRoles,
@@ -155,14 +151,14 @@ export async function optionalAuth(
           customClaims: decodedToken as Record<string, unknown>,
         };
       } catch (error) {
-        getLogger().debug('Optional token verification failed', error);
+        getLogger().debug('Optional token verification failed', error as any);
         // Continue without authentication
       }
     }
 
     next();
   } catch (error) {
-    getLogger().error('Optional auth middleware error', error);
+    getLogger().error('Optional auth middleware error', error as any);
     next();
   }
 }
@@ -205,11 +201,7 @@ export function authRateLimit(windowMs: number = 60000, maxRequests: number = 5)
 /**
  * Middleware to attach user info to locals for templates
  */
-export function attachUserInfo(
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-): void {
+export function attachUserInfo(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   if (req.user) {
     res.locals.user = req.user;
   }

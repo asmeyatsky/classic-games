@@ -2,7 +2,7 @@
  * Game Database Schemas
  */
 
-import { Sql } from '../client';
+import { Sql } from '../client.js';
 
 export async function createRoomsTable(db: Sql): Promise<void> {
   await db`

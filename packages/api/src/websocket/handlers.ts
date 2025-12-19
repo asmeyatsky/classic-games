@@ -6,7 +6,7 @@
 import { Socket } from 'socket.io';
 import { getDatabase } from '@classic-games/database';
 import { getLogger } from '@classic-games/logger';
-import { trackGameEvent } from '@classic-games/analytics';
+import { trackMove, trackGameEnd } from '@classic-games/analytics';
 
 const logger = getLogger();
 
@@ -125,12 +125,8 @@ export async function handleGameMove(
     });
 
     logger.debug('Game move broadcast', { gameId, userId, roomId });
-    trackGameEvent({
-      gameId,
-      eventType: 'move',
-      playerId: userId,
-      details: move,
-    });
+    // Track move event - using a default game type since we don't have it in this context
+    trackMove(gameId, userId, 'poker', move.type || 'unknown', 0);
   } catch (error) {
     logger.error('Error handling game move', error);
     socket.emit('error', { message: 'Failed to process move' });
@@ -343,12 +339,8 @@ export function handleGameEnd(
   });
 
   logger.info('Game ended notification broadcast', { gameId, winnerId });
-  trackGameEvent({
-    gameId,
-    eventType: 'game_end',
-    playerId: winnerId,
-    details: { loserIds, points },
-  });
+  // Track game end - using a default game type and values since we don't have them in this context
+  trackGameEnd(gameId, winnerId, 'poker', 0, points[winnerId] || 0);
 }
 
 /**

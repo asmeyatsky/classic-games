@@ -2,7 +2,7 @@
  * User Database Schema
  */
 
-import { Sql } from '../client';
+import { Sql } from '../client.js';
 
 export async function createUsersTable(db: Sql): Promise<void> {
   await db`

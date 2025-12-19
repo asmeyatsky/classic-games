@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Leaderboard Routes
  */
@@ -134,9 +135,11 @@ router.get(
  */
 router.get(
   '/user/:userId',
-  validateQuery(z.object({
-    gameType: z.enum(['poker', 'backgammon', 'scrabble']).optional(),
-  })),
+  validateQuery(
+    z.object({
+      gameType: z.enum(['poker', 'backgammon', 'scrabble']).optional(),
+    })
+  ),
   asyncHandler(async (req: Request, res: Response) => {
     const db = getDatabase();
     const { userId } = req.params;

@@ -17,7 +17,7 @@ export function validateBody(schema: z.ZodSchema) {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const issues = error.errors.map((e) => ({
+        const issues = error.issues.map((e: any) => ({
           path: e.path.join('.'),
           message: e.message,
         }));
@@ -45,7 +45,7 @@ export function validateQuery(schema: z.ZodSchema) {
       if (error instanceof z.ZodError) {
         res.status(400).json({
           error: 'Invalid query parameters',
-          issues: error.errors,
+          issues: error.issues,
         });
       } else {
         res.status(400).json({ error: 'Invalid query' });
@@ -67,7 +67,7 @@ export function validateParams(schema: z.ZodSchema) {
       if (error instanceof z.ZodError) {
         res.status(400).json({
           error: 'Invalid URL parameters',
-          issues: error.errors,
+          issues: error.issues,
         });
       } else {
         res.status(400).json({ error: 'Invalid parameters' });

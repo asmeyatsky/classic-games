@@ -39,7 +39,7 @@ export interface TextureSet {
 export const pbrMaterials = {
   // Card materials
   card: {
-    baseColor: '#FFFFFF',
+    color: '#FFFFFF',
     roughness: 0.1, // Cards are semi-glossy
     metalness: 0.0,
     normalScale: 0.5,
@@ -47,7 +47,7 @@ export const pbrMaterials = {
   } as PBRMaterialConfig,
 
   cardBack: {
-    baseColor: '#1E3A8A',
+    color: '#1E3A8A',
     roughness: 0.15,
     metalness: 0.0,
     normalScale: 0.4,
@@ -56,7 +56,7 @@ export const pbrMaterials = {
 
   // Felt/cloth materials
   felt: {
-    baseColor: '#0F5132',
+    color: '#0F5132',
     roughness: 0.95, // Felt is very rough
     metalness: 0.0,
     normalScale: 1.0,
@@ -64,7 +64,7 @@ export const pbrMaterials = {
   } as PBRMaterialConfig,
 
   feltLight: {
-    baseColor: '#1B7741',
+    color: '#1B7741',
     roughness: 0.9,
     metalness: 0.0,
     normalScale: 0.95,
@@ -73,7 +73,7 @@ export const pbrMaterials = {
 
   // Chip materials
   chipRed: {
-    baseColor: '#DC2626',
+    color: '#DC2626',
     roughness: 0.3, // Slight gloss
     metalness: 0.15, // Slight metallic tint
     normalScale: 0.6,
@@ -81,7 +81,7 @@ export const pbrMaterials = {
   } as PBRMaterialConfig,
 
   chipBlack: {
-    baseColor: '#1F2937',
+    color: '#1F2937',
     roughness: 0.25,
     metalness: 0.2,
     normalScale: 0.6,
@@ -89,7 +89,7 @@ export const pbrMaterials = {
   } as PBRMaterialConfig,
 
   chipGold: {
-    baseColor: '#FBBF24',
+    color: '#FBBF24',
     roughness: 0.35,
     metalness: 0.8, // Very metallic
     normalScale: 0.5,
@@ -98,7 +98,7 @@ export const pbrMaterials = {
   } as PBRMaterialConfig,
 
   chipWhite: {
-    baseColor: '#F3F4F6',
+    color: '#F3F4F6',
     roughness: 0.3,
     metalness: 0.1,
     normalScale: 0.6,
@@ -107,7 +107,7 @@ export const pbrMaterials = {
 
   // Wood materials
   woodDark: {
-    baseColor: '#654321',
+    color: '#654321',
     roughness: 0.7, // Wood is moderately rough
     metalness: 0.0,
     normalScale: 1.0,
@@ -115,7 +115,7 @@ export const pbrMaterials = {
   } as PBRMaterialConfig,
 
   woodLight: {
-    baseColor: '#DEB887',
+    color: '#DEB887',
     roughness: 0.65,
     metalness: 0.0,
     normalScale: 0.95,
@@ -124,7 +124,7 @@ export const pbrMaterials = {
 
   // Metal materials
   bronze: {
-    baseColor: '#CD7F32',
+    color: '#CD7F32',
     roughness: 0.4,
     metalness: 0.9,
     normalScale: 0.4,
@@ -133,7 +133,7 @@ export const pbrMaterials = {
   } as PBRMaterialConfig,
 
   silver: {
-    baseColor: '#E8E8E8',
+    color: '#E8E8E8',
     roughness: 0.15,
     metalness: 0.95,
     normalScale: 0.3,
@@ -142,7 +142,7 @@ export const pbrMaterials = {
   } as PBRMaterialConfig,
 
   gold: {
-    baseColor: '#FFD700',
+    color: '#FFD700',
     roughness: 0.25,
     metalness: 0.9,
     normalScale: 0.35,
@@ -152,7 +152,7 @@ export const pbrMaterials = {
 
   // Glass materials
   glass: {
-    baseColor: '#E8F4F8',
+    color: '#E8F4F8',
     roughness: 0.05, // Very smooth
     metalness: 0.0,
     normalScale: 0.1,
@@ -163,7 +163,7 @@ export const pbrMaterials = {
 
   // Leather materials
   leather: {
-    baseColor: '#8B4513',
+    color: '#8B4513',
     roughness: 0.6,
     metalness: 0.0,
     normalScale: 0.8,
@@ -172,7 +172,7 @@ export const pbrMaterials = {
 
   // Plastic materials
   plasticGlossy: {
-    baseColor: '#FFFFFF',
+    color: '#FFFFFF',
     roughness: 0.2,
     metalness: 0.1,
     normalScale: 0.4,
@@ -180,7 +180,7 @@ export const pbrMaterials = {
   } as PBRMaterialConfig,
 
   plasticMatte: {
-    baseColor: '#E0E0E0',
+    color: '#E0E0E0',
     roughness: 0.6,
     metalness: 0.0,
     normalScale: 0.5,
@@ -189,7 +189,7 @@ export const pbrMaterials = {
 
   // Fabric materials
   fabric: {
-    baseColor: '#8B7355',
+    color: '#8B7355',
     roughness: 0.85,
     metalness: 0.0,
     normalScale: 0.9,
@@ -198,7 +198,7 @@ export const pbrMaterials = {
 
   // Emissive materials (for neon/glow effects)
   neonBlue: {
-    baseColor: '#0066FF',
+    color: '#0066FF',
     roughness: 0.3,
     metalness: 0.5,
     emissive: '#0033FF',
@@ -207,7 +207,7 @@ export const pbrMaterials = {
   } as PBRMaterialConfig,
 
   neonGreen: {
-    baseColor: '#00FF00',
+    color: '#00FF00',
     roughness: 0.3,
     metalness: 0.5,
     emissive: '#00CC00',

@@ -55,7 +55,7 @@ export {
   isAuthenticated,
   getUserId,
   getUserEmail,
-} from './client';
+} from './client.js';
 
 // Server exports
 export {
@@ -73,7 +73,7 @@ export {
   revokeTokens,
   listUsers,
   deleteUsers,
-} from './server';
+} from './server.js';
 
 // Middleware exports
 export {
@@ -85,4 +85,4 @@ export {
   authRateLimit,
   attachUserInfo,
   type AuthenticatedRequest,
-} from './middleware';
+} from './middleware.js';

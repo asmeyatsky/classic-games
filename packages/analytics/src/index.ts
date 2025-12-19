@@ -29,7 +29,7 @@ export {
   setupUnhandledRejectionHandler,
   setupGlobalErrorHandler,
   getSentryInstance,
-} from './client';
+} from './client.js';
 
 export {
   GameEventType,
@@ -46,7 +46,7 @@ export {
   trackLogout,
   type GameEvent,
   type UserEvent,
-} from './events';
+} from './events.js';
 
 export {
   initializeWebVitals,
@@ -57,4 +57,4 @@ export {
   getPerformanceMetrics,
   reportPerformanceMetrics,
   trackMemoryUsage,
-} from './vitals';
+} from './vitals.js';

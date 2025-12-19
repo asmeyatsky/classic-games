@@ -11,10 +11,10 @@
  */
 
 // Game Configurations
-export * from './games';
+export * from './games/index.js';
 
 // UI Configuration
-export { UI_CONFIG, GAME_COLORS, type Breakpoint, type Color, type ZIndex } from './ui';
+export { UI_CONFIG, GAME_COLORS, type Breakpoint, type Color, type ZIndex } from './ui/index.js';
 
 // Server Configuration
-export { SERVER_CONFIG, ENVIRONMENTS, type Environment } from './server';
+export { SERVER_CONFIG, ENVIRONMENTS, type Environment } from './server.js';

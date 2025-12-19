@@ -90,61 +90,63 @@ export const Checker3D: React.FC<Checker3DProps> = ({
       onPointerEnter={() => setInternalHovered(true)}
       onPointerLeave={() => setInternalHovered(false)}
     >
-      {/* Main checker body */}
+      {/* Main checker body with enhanced materials */}
       <mesh position={[0, 0, 0]}>
         <cylinderGeometry args={[CHECKER_RADIUS, CHECKER_RADIUS, CHECKER_HEIGHT, 32]} />
         <meshStandardMaterial
           color={CHECKER_COLORS[color]}
-          roughness={0.5}
-          metalness={0.2}
+          roughness={0.2}
+          metalness={0.5}
           emissive={selected ? '#FFFF00' : '#000000'}
           emissiveIntensity={selected ? 0.3 : 0}
         />
       </mesh>
 
-      {/* Top edge highlight */}
+      {/* Top edge highlight with enhanced materials */}
       <mesh position={[0, CHECKER_HEIGHT / 2 + 0.001, 0]}>
         <cylinderGeometry args={[CHECKER_RADIUS - 0.005, CHECKER_RADIUS - 0.005, 0.002, 32]} />
         <meshStandardMaterial
           color={CHECKER_BORDER_COLORS[color]}
-          roughness={0.2}
-          metalness={0.7}
+          roughness={0.05}
+          metalness={0.95}
         />
       </mesh>
 
-      {/* Center dot (for visual interest) */}
+      {/* Center dot (for visual interest) with enhanced materials */}
       <mesh position={[0, CHECKER_HEIGHT / 2 + 0.005, 0]}>
         <cylinderGeometry args={[CHECKER_RADIUS * 0.3, CHECKER_RADIUS * 0.3, 0.002, 16]} />
         <meshStandardMaterial
           color={color === 'white' ? '#000000' : '#FFFFFF'}
-          roughness={0.8}
-          metalness={0}
+          roughness={0.5}
+          metalness={0.3}
         />
       </mesh>
 
-      {/* Hover ring (selection indicator) */}
+      {/* Hover ring (selection indicator) with enhanced materials */}
       {(isHovered || selected) && (
         <mesh position={[0, CHECKER_HEIGHT / 2 + 0.007, 0]}>
           <torusGeometry args={[CHECKER_RADIUS + 0.01, 0.003, 16, 32]} />
           <meshStandardMaterial
             color={selected ? '#FFFF00' : '#06B6D4'}
             emissive={selected ? '#FFFF00' : '#06B6D4'}
-            emissiveIntensity={0.5}
-            roughness={0.3}
-            metalness={0.7}
+            emissiveIntensity={0.7}
+            roughness={0.1}
+            metalness={0.9}
           />
         </mesh>
       )}
 
-      {/* Shadow disc underneath */}
+      {/* Shadow disc underneath with enhanced materials */}
       <mesh position={[0, -0.002, 0]}>
         <cylinderGeometry args={[CHECKER_RADIUS * 1.1, CHECKER_RADIUS * 1.1, 0.001, 32]} />
         <meshStandardMaterial
           color="#000000"
           roughness={0.95}
-          metalness={0}
+          metalness={0.05}
           transparent
-          opacity={0.2}
+          opacity={0.3}
+          emissive="#000000"
+          emissiveIntensity={0.1}
         />
       </mesh>
     </group>
@@ -184,7 +186,9 @@ export const CheckerStack: React.FC<CheckerStackProps> = ({
 
       {/* Count indicator for large stacks (5+) */}
       {count >= 5 && (
-        <mesh position={[position[0], position[1] + count * CHECKER_STACK_OFFSET + 0.05, position[2]]}>
+        <mesh
+          position={[position[0], position[1] + count * CHECKER_STACK_OFFSET + 0.05, position[2]]}
+        >
           <planeGeometry args={[0.04, 0.04]} />
           <meshStandardMaterial
             color={color === 'white' ? '#000000' : '#FFFFFF'}

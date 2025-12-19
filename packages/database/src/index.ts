@@ -28,7 +28,7 @@ export {
   getHealthStatus,
   sql,
   type Sql,
-} from './client';
+} from './client.js';
 
 export {
   createAllTables,
@@ -46,7 +46,7 @@ export {
   createRoomPlayersTable,
   createTournamentTable,
   dropGameTables,
-} from './schemas';
+} from './schemas/index.js';
 
 export {
   migrateLatest,
@@ -56,4 +56,4 @@ export {
   getPendingMigrations,
   createMigrationsTable,
   migrations,
-} from './migrations';
+} from './migrations/index.js';

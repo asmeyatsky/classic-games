@@ -35,7 +35,7 @@ export function errorHandler(
 
   if (isClassicGamesError(error)) {
     // Game-specific error
-    logger.warn(error.message, undefined, {
+    logger.warn(error.message, {
       code: error.code,
       statusCode: error.statusCode,
       context: error.context,

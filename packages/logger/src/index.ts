@@ -43,7 +43,7 @@ export {
   isClassicGamesError,
   extractErrorDetails,
   type ClassicGamesError as IClassicGamesError,
-} from './errors';
+} from './errors.js';
 
 export {
   createLogger,
@@ -52,4 +52,4 @@ export {
   getLogger,
   PerformanceTimer,
   type LogLevel,
-} from './logger';
+} from './logger.js';

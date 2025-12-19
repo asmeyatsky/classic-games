@@ -29,31 +29,33 @@ const GAME_CONFIGS: Record<string, RoomConfig> = {
     maxPlayers: 6,
     minPlayers: 2,
     timeoutSeconds: 60,
-    scoringMode: 'competitive'
+    scoringMode: 'competitive',
   },
   backgammon: {
     maxPlayers: 2,
     minPlayers: 2,
     timeoutSeconds: 120,
-    scoringMode: 'competitive'
+    scoringMode: 'competitive',
   },
   scrabble: {
     maxPlayers: 4,
     minPlayers: 2,
     timeoutSeconds: 180,
-    scoringMode: 'competitive'
-  }
+    scoringMode: 'competitive',
+  },
 };
 
 export class RoomManager {
   private rooms: Map<string, any> = new Map();
-  private roomQueues: Map<string, string[]> = new Map(['poker', 'backgammon', 'scrabble'].map(game => [game, []]));
+  private roomQueues: Map<string, string[]> = new Map(
+    ['poker', 'backgammon', 'scrabble'].map((game) => [game, []])
+  );
   private stats: RoomStats = {
     totalCreated: 0,
     currentActive: 0,
     totalGamesCompleted: 0,
     averageGameDuration: 0,
-    totalPlayersServed: 0
+    totalPlayersServed: 0,
   };
 
   /**
@@ -74,7 +76,7 @@ export class RoomManager {
       endedAt: null,
       gameState: null,
       isActive: false,
-      status: 'waiting' // waiting, playing, completed
+      status: 'waiting', // waiting, playing, completed
     };
 
     this.rooms.set(roomId, room);
@@ -167,7 +169,7 @@ export class RoomManager {
     this.stats.averageGameDuration = (totalDuration + duration) / this.stats.totalGamesCompleted;
 
     // Update players served
-    const humanPlayers = room.players.filter(p => !p.startsWith('ai_')).length;
+    const humanPlayers = room.players.filter((p: string) => !p.startsWith('ai_')).length;
     this.stats.totalPlayersServed += humanPlayers;
 
     return true;
@@ -184,10 +186,10 @@ export class RoomManager {
    * Get all active rooms
    */
   getActiveRooms(gameType?: string): any[] {
-    const active = Array.from(this.rooms.values()).filter(room => room.isActive);
+    const active = Array.from(this.rooms.values()).filter((room) => room.isActive);
 
     if (gameType) {
-      return active.filter(room => room.gameType === gameType);
+      return active.filter((room) => room.gameType === gameType);
     }
 
     return active;
@@ -222,11 +224,7 @@ export class RoomManager {
     let cleaned = 0;
 
     for (const [roomId, room] of this.rooms) {
-      if (
-        !room.isActive &&
-        room.endedAt &&
-        (now - room.endedAt) > maxAge
-      ) {
+      if (!room.isActive && room.endedAt && now - room.endedAt > maxAge) {
         this.rooms.delete(roomId);
         cleaned++;
       }
@@ -242,7 +240,7 @@ export class RoomManager {
     // This would use player history and ratings
     return {
       gameType: 'poker',
-      difficulty: 'intermediate'
+      difficulty: 'intermediate',
     };
   }
 }

@@ -65,25 +65,27 @@ export const Tile3D: React.FC<Tile3DProps> = ({
       onPointerEnter={() => setInternalHovered(true)}
       onPointerLeave={() => setInternalHovered(false)}
     >
-      {/* Tile body (wood) */}
+      {/* Tile body (wood) with enhanced materials */}
       <mesh position={[0, 0, 0]}>
         <boxGeometry args={[TILE_SIZE, TILE_HEIGHT, TILE_SIZE]} />
         <meshStandardMaterial
           color="#F5DEB3"
-          roughness={0.6}
-          metalness={0.1}
+          roughness={0.3}
+          metalness={0.3}
+          emissive="#4B322B"
+          emissiveIntensity={0.05}
         />
       </mesh>
 
-      {/* Top surface (felt) */}
+      {/* Top surface (felt) with enhanced materials */}
       <mesh position={[0, TILE_HEIGHT / 2 + 0.0005, 0]}>
         <planeGeometry args={[TILE_SIZE * 0.95, TILE_SIZE * 0.95]} />
         <meshStandardMaterial
           color="#FFFACD"
-          roughness={0.8}
-          metalness={0}
+          roughness={0.5}
+          metalness={0.2}
           emissive={selected ? '#FFFF00' : '#000000'}
-          emissiveIntensity={selected ? 0.2 : 0}
+          emissiveIntensity={selected ? 0.3 : 0}
         />
       </mesh>
 
@@ -96,14 +98,16 @@ export const Tile3D: React.FC<Tile3DProps> = ({
         4. Convert to texture
       */}
 
-      {/* Hover ring */}
+      {/* Hover ring with enhanced materials */}
       {isHovered && (
         <mesh position={[0, TILE_HEIGHT / 2 + 0.002, 0]}>
-          <torusGeometry args={[TILE_SIZE / 1.8, 0.0008, 8, 32]} />
+          <torusGeometry args={[TILE_SIZE / 1.8, 0.0008, 16, 32]} />
           <meshStandardMaterial
             color="#06B6D4"
             emissive="#06B6D4"
-            emissiveIntensity={0.5}
+            emissiveIntensity={0.7}
+            roughness={0.05}
+            metalness={0.9}
           />
         </mesh>
       )}
@@ -127,10 +131,16 @@ export const Rack: React.FC<RackProps> = ({ tiles, position, onTileSelect }) => 
 
   return (
     <group ref={rackRef} position={position}>
-      {/* Rack base (wood) */}
+      {/* Rack base (wood) with enhanced materials */}
       <mesh position={[0, -0.015, 0]}>
         <boxGeometry args={[rackWidth + 0.02, 0.005, TILE_SIZE + 0.01]} />
-        <meshStandardMaterial color="#8B4513" roughness={0.7} metalness={0.1} />
+        <meshStandardMaterial
+          color="#8B4513"
+          roughness={0.3}
+          metalness={0.3}
+          emissive="#2B1B0B"
+          emissiveIntensity={0.05}
+        />
       </mesh>
 
       {/* Tile slots */}
@@ -138,23 +148,31 @@ export const Rack: React.FC<RackProps> = ({ tiles, position, onTileSelect }) => 
         const offsetX = (index - (tiles.length - 1) / 2) * tileSpacing;
         return (
           <group key={`tile-${index}`} onClick={() => onTileSelect?.(index)}>
-            <Tile3D
-              letter={tile.letter}
-              value={tile.value}
-              position={[offsetX, 0, 0]}
-            />
+            <Tile3D letter={tile.letter} value={tile.value} position={[offsetX, 0, 0]} />
           </group>
         );
       })}
 
-      {/* Rack rails (for visual appeal) */}
+      {/* Rack rails (for visual appeal) with enhanced materials */}
       <mesh position={[-(rackWidth / 2 + 0.01), -0.005, 0]}>
         <boxGeometry args={[0.005, 0.03, TILE_SIZE + 0.01]} />
-        <meshStandardMaterial color="#654321" roughness={0.7} metalness={0.1} />
+        <meshStandardMaterial
+          color="#654321"
+          roughness={0.4}
+          metalness={0.3}
+          emissive="#1C1206"
+          emissiveIntensity={0.05}
+        />
       </mesh>
       <mesh position={[rackWidth / 2 + 0.01, -0.005, 0]}>
         <boxGeometry args={[0.005, 0.03, TILE_SIZE + 0.01]} />
-        <meshStandardMaterial color="#654321" roughness={0.7} metalness={0.1} />
+        <meshStandardMaterial
+          color="#654321"
+          roughness={0.4}
+          metalness={0.3}
+          emissive="#1C1206"
+          emissiveIntensity={0.05}
+        />
       </mesh>
     </group>
   );
@@ -179,34 +197,34 @@ export const TileBag: React.FC<TileBagProps> = ({ remaining, position }) => {
 
   return (
     <group ref={bagRef} position={position}>
-      {/* Bag body (drawstring pouch) */}
+      {/* Bag body (drawstring pouch) with enhanced materials */}
       <mesh position={[0, 0, 0]}>
-        <coneGeometry args={[0.08, 0.12, 8]} />
+        <coneGeometry args={[0.08, 0.12, 16]} />
         <meshStandardMaterial
           color="#654321"
-          roughness={0.8}
-          metalness={0}
+          roughness={0.5}
+          metalness={0.2}
+          emissive="#1C1206"
+          emissiveIntensity={0.05}
         />
       </mesh>
 
-      {/* Bag top (opening) */}
+      {/* Bag top (opening) with enhanced materials */}
       <mesh position={[0, 0.06, 0]}>
-        <cylinderGeometry args={[0.08, 0.07, 0.01, 8]} />
+        <cylinderGeometry args={[0.08, 0.07, 0.01, 16]} />
         <meshStandardMaterial
           color="#8B4513"
-          roughness={0.7}
-          metalness={0}
+          roughness={0.4}
+          metalness={0.3}
+          emissive="#2B1B0B"
+          emissiveIntensity={0.05}
         />
       </mesh>
 
-      {/* Drawstring */}
+      {/* Drawstring with enhanced materials */}
       <mesh position={[0, 0.065, 0]}>
-        <torusGeometry args={[0.078, 0.003, 4, 8]} />
-        <meshStandardMaterial
-          color="#FFFFFF"
-          roughness={0.5}
-          metalness={0.3}
-        />
+        <torusGeometry args={[0.078, 0.003, 8, 16]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={0.2} metalness={0.7} />
       </mesh>
 
       {/* Remaining count label (would show on canvas) */}
@@ -227,9 +245,6 @@ export interface PlacedTileProps extends Tile3DProps {
   boardPosition: [number, number]; // Grid position [row, col]
 }
 
-export const PlacedTile: React.FC<PlacedTileProps> = ({
-  boardPosition,
-  ...tileProps
-}) => {
+export const PlacedTile: React.FC<PlacedTileProps> = ({ boardPosition, ...tileProps }) => {
   return <Tile3D {...tileProps} />;
 };

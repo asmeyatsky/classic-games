@@ -11,24 +11,29 @@ import redis from 'redis';
  * Create a Redis client for distributed rate limiting
  * Falls back to memory store if Redis is unavailable
  */
-function createStore() {
-  try {
-    const redisClient = redis.createClient({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-    });
+function createStore(): any {
+  // For development, use memory store to avoid Redis dependency
+  // In production, we would use Redis for distributed rate limiting
+  if (process.env.NODE_ENV === 'production' && process.env.REDIS_URL) {
+    try {
+      const redisClient = redis.createClient({
+        url: process.env.REDIS_URL,
+      });
 
-    return new RedisStore({
-      client: redisClient,
-      prefix: 'rl:',
-      sendCommand: async (command: string, args: string[]) => {
-        return await (redisClient as any)[command](...args);
-      },
-    });
-  } catch (error) {
-    console.warn('Redis unavailable for rate limiting, using memory store');
-    return undefined;
+      redisClient.on('error', (err) => {
+        console.warn('Redis Client Error:', err);
+      });
+
+      return new RedisStore({
+        prefix: 'rl:',
+        sendCommand: (...args: string[]) => redisClient.sendCommand(args),
+      });
+    } catch (error) {
+      console.warn('Redis unavailable for rate limiting, using memory store', error);
+    }
   }
+  // Return undefined to use the default in-memory store
+  return undefined;
 }
 
 /**
@@ -50,7 +55,7 @@ export const apiLimiter = rateLimit({
     res.status(429).json({
       error: 'Too many requests',
       message: 'You have exceeded the rate limit. Please try again later.',
-      retryAfter: req.rateLimit?.resetTime,
+      retryAfter: (req as any).rateLimit?.resetTime,
     });
   },
 });
@@ -72,7 +77,7 @@ export const authLimiter = rateLimit({
     res.status(429).json({
       error: 'Too many login attempts',
       message: 'Your account has been temporarily locked. Please try again in 15 minutes.',
-      retryAfter: req.rateLimit?.resetTime,
+      retryAfter: (req as any).rateLimit?.resetTime,
     });
   },
 });
@@ -96,7 +101,7 @@ export const sensitiveOpLimiter = rateLimit({
     res.status(429).json({
       error: 'Rate limit exceeded',
       message: 'Too many operations. Please wait before trying again.',
-      retryAfter: req.rateLimit?.resetTime,
+      retryAfter: (req as any).rateLimit?.resetTime,
     });
   },
 });

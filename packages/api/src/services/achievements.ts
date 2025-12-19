@@ -152,7 +152,7 @@ export async function getUserAchievements(userId: string): Promise<Achievement[]
     ORDER BY a.points DESC
   `;
 
-  return achievements;
+  return achievements as unknown as Achievement[];
 }
 
 /**
@@ -242,5 +242,5 @@ export async function getAchievementDetails(code: string): Promise<Achievement |
     WHERE achievement_code = ${code}
   `;
 
-  return achievements.length > 0 ? achievements[0] : null;
+  return achievements.length > 0 ? (achievements[0] as unknown as Achievement) : null;
 }

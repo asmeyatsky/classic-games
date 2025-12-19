@@ -14,41 +14,15 @@
  * 4. Particle effects for dealing and shuffling
  */
 
-export interface Card3DProps {
-  suit: 'hearts' | 'diamonds' | 'clubs' | 'spades';
-  rank: string;
-  faceUp: boolean;
-  position: [number, number, number];
-  rotation?: [number, number, number];
-  scale?: [number, number, number];
-  onClick?: () => void;
-  hovered?: boolean;
-  selected?: boolean;
-}
+// Re-export components and types from individual files
+export { Card3D } from './Card3D';
+export type { Card3DProps } from './Card3D';
 
-export interface Chip3DProps {
-  value: number;
-  color: string;
-  position: [number, number, number];
-  count?: number;
-  hovered?: boolean;
-  onClick?: () => void;
-}
+export { Chip3D } from './Chip3D';
+export type { Chip3DProps } from './Chip3D';
 
-export interface Table3DProps {
-  seats: number;
-  feltColor?: string;
-  size?: 'small' | 'medium' | 'large';
-}
+export { Table3D } from './Table3D';
+export type { Table3DProps } from './Table3D';
 
-export interface DeckProps {
-  position: [number, number, number];
-  cardCount: number;
-  faceUp?: boolean;
-}
-
-// Re-export from individual component files
-export * from './Card3D';
-export * from './Chip3D';
-export * from './Table3D';
-export * from './Deck3D';
+export { Deck3D } from './Deck3D';
+export type { DeckProps } from './Deck3D';

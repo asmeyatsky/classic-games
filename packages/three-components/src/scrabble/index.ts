@@ -9,31 +9,9 @@
  * - Tile bag with draw animation
  */
 
-export interface Board3DProps {
-  size?: number;
-}
+// Re-export components and types from individual files
+export { Board3D as ScrabbleBoard3D } from './Board3D';
+export type { Board3DProps as ScrabbleBoard3DProps } from './Board3D';
 
-export interface Tile3DProps {
-  letter: string;
-  value: number;
-  position: [number, number, number];
-  rotation?: [number, number, number];
-  onDrag?: (position: [number, number, number]) => void;
-  selected?: boolean;
-  hovered?: boolean;
-}
-
-export interface RackProps {
-  tiles: Array<{ letter: string; value: number }>;
-  position: [number, number, number];
-  onTileSelect?: (index: number) => void;
-}
-
-export interface TileBagProps {
-  remaining: number;
-  position: [number, number, number];
-}
-
-// Re-export from individual files
-export * from './Board3D';
-export * from './Tile3D';
+export { Tile3D } from './Tile3D';
+export type { Tile3DProps } from './Tile3D';

@@ -4,16 +4,8 @@
  * Track Core Web Vitals and custom metrics
  */
 
-import {
-  getCLS,
-  getFCP,
-  getFID,
-  getLCP,
-  getTTFB,
-  Metric,
-  ReportHandler,
-} from 'web-vitals';
-import { addBreadcrumb, captureMessage, setExtraContext } from './client';
+import { getCLS, getFCP, getFID, getLCP, getTTFB, Metric, ReportHandler } from 'web-vitals';
+import { addBreadcrumb, captureMessage, setExtraContext } from './client.js';
 import { getLogger } from '@classic-games/logger';
 
 interface VitalsThresholds {
@@ -74,10 +66,7 @@ export function initializeWebVitals(thresholds: VitalsThresholds = defaultThresh
 
     // Report poor vitals
     if (rating === 'poor') {
-      captureMessage(
-        `${metric.name} is poor: ${metric.value}`,
-        'warning'
-      );
+      captureMessage(`${metric.name} is poor: ${metric.value}`, 'warning');
     }
 
     // Set extra context
@@ -103,11 +92,7 @@ export function initializeWebVitals(thresholds: VitalsThresholds = defaultThresh
 /**
  * Track custom metric
  */
-export function trackCustomMetric(
-  name: string,
-  value: number,
-  unit: string = 'ms'
-): void {
+export function trackCustomMetric(name: string, value: number, unit: string = 'ms'): void {
   const logger = getLogger();
 
   logger.logPerformance(name, value, { unit });
@@ -128,7 +113,12 @@ export function trackResourceTiming(resourceName: string, duration: number): voi
 /**
  * Track API call performance
  */
-export function trackApiCall(endpoint: string, method: string, duration: number, statusCode: number): void {
+export function trackApiCall(
+  endpoint: string,
+  method: string,
+  duration: number,
+  statusCode: number
+): void {
   const logger = getLogger();
 
   logger.logResponse(method, endpoint, statusCode, duration);

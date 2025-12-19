@@ -46,7 +46,9 @@ export function initializeFirebaseAdmin(config: FirebaseAdminConfig): admin.app.
  */
 export function getAdminAuth(): admin.auth.Auth {
   if (!adminApp) {
-    adminApp = getApp() as admin.app.App;
+    // Firebase Web SDK app vs Firebase Admin SDK app are different types
+    // Use the admin SDK directly
+    adminApp = admin.app();
   }
   return admin.auth(adminApp);
 }
@@ -54,9 +56,7 @@ export function getAdminAuth(): admin.auth.Auth {
 /**
  * Verify ID token
  */
-export async function verifyIdToken(
-  token: string
-): Promise<admin.auth.DecodedIdToken> {
+export async function verifyIdToken(token: string): Promise<admin.auth.DecodedIdToken> {
   try {
     const auth = getAdminAuth();
     const decodedToken = await auth.verifyIdToken(token);
@@ -153,10 +153,7 @@ export async function deleteUser(uid: string): Promise<void> {
 /**
  * Set custom claims
  */
-export async function setCustomClaims(
-  uid: string,
-  claims: Record<string, unknown>
-): Promise<void> {
+export async function setCustomClaims(uid: string, claims: Record<string, unknown>): Promise<void> {
   try {
     const auth = getAdminAuth();
     await auth.setCustomUserClaims(uid, claims);
@@ -217,13 +214,13 @@ export async function revokeTokens(uid: string): Promise<void> {
 /**
  * List users
  */
-export async function listUsers(maxResults: number = 1000): Promise<admin.auth.GetUsersResult> {
+export async function listUsers(maxResults: number = 1000): Promise<admin.auth.ListUsersResult> {
   try {
     const auth = getAdminAuth();
     const result = await auth.listUsers(maxResults);
     return result;
   } catch (error) {
-    getLogger().error('Failed to list users', error);
+    getLogger().error('Failed to list users', error as any);
     throw error;
   }
 }

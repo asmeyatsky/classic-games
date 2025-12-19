@@ -16,33 +16,12 @@
  * 5. Real-world proportions and materials
  */
 
-export interface Board3DProps {
-  woodTexture?: string;
-  feltColor?: string;
-}
+// Re-export components and types from individual files
+export { Board3D } from './Board3D';
+export type { Board3DProps } from './Board3D';
 
-export interface Checker3DProps {
-  color: 'white' | 'black';
-  position: [number, number, number];
-  stackIndex?: number;
-  onClick?: () => void;
-  selected?: boolean;
-  hovered?: boolean;
-}
+export { Checker3D } from './Checker3D';
+export type { Checker3DProps } from './Checker3D';
 
-export interface Dice3DProps {
-  value: number;
-  position: [number, number, number];
-  rolling: boolean;
-  onRollComplete?: (value: number) => void;
-}
-
-export interface DiceCupProps {
-  position: [number, number, number];
-  shaking: boolean;
-}
-
-// Re-export from individual component files
-export * from './Board3D';
-export * from './Checker3D';
-export * from './Dice3D';
+export { Dice3D } from './Dice3D';
+export type { Dice3DProps } from './Dice3D';

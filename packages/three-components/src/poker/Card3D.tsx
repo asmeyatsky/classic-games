@@ -77,7 +77,7 @@ export const Card3D: React.FC<Card3DProps> = ({
       groupRef.current.rotation.y += shortestAngle * 0.1;
 
       // Hover elevation
-      const targetY = (internalHovered || hovered) ? 0.2 : 0;
+      const targetY = internalHovered || hovered ? 0.2 : 0;
       groupRef.current.position.y += (targetY - groupRef.current.position.y) * 0.1;
 
       // Selection glow (would be added via lighting)
@@ -131,11 +131,7 @@ export const Card3D: React.FC<Card3DProps> = ({
       {/* Card edges (subtle visible thickness) */}
       <mesh position={[0, 0, 0]}>
         <boxGeometry args={[CARD_WIDTH, CARD_HEIGHT, CARD_DEPTH]} />
-        <meshStandardMaterial
-          color="#F0F0F0"
-          roughness={0.9}
-          metalness={0}
-        />
+        <meshStandardMaterial color="#F0F0F0" roughness={0.9} metalness={0} />
       </mesh>
 
       {/* Canvas texture would be rendered here in a full implementation */}
@@ -156,7 +152,6 @@ export const Card3D: React.FC<Card3DProps> = ({
  * This version includes canvas rendering for realistic card display
  */
 export const Card3DWithTexture: React.FC<Card3DProps> = (props) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [texture, setTexture] = useState<any>(null);
 
   // Create card texture
@@ -209,7 +204,7 @@ export const Card3DWithTexture: React.FC<Card3DProps> = (props) => {
 
     // In a real implementation, convert canvas to texture
     // For now, this demonstrates the structure
-    canvasRef.current = canvas;
+    // Store canvas in state or use it to create a texture
   }, [props.rank, props.suit, props.faceUp]);
 
   return <Card3D {...props} />;

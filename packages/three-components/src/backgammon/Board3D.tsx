@@ -28,10 +28,7 @@ const BOARD_DEPTH = 2.0;
 const POINT_HEIGHT = 0.3;
 const POINT_WIDTH = 0.1;
 
-export const Board3D: React.FC<Board3DProps> = ({
-  woodTexture,
-  feltColor = '#8B4513',
-}) => {
+export const Board3D: React.FC<Board3DProps> = ({ woodTexture, feltColor = '#8B4513' }) => {
   const boardRef = useRef<Group>(null);
 
   // Backgammon board layout: 24 points
@@ -58,23 +55,27 @@ export const Board3D: React.FC<Board3DProps> = ({
 
   return (
     <group ref={boardRef} position={[0, 0, 0]}>
-      {/* Main board surface */}
+      {/* Main board surface with enhanced materials */}
       <mesh position={[0, 0, 0]}>
         <boxGeometry args={[BOARD_WIDTH * 1.2, 0.05, BOARD_DEPTH * 1.2]} />
         <meshStandardMaterial
           color="#8B4513"
-          roughness={0.7}
-          metalness={0.1}
+          roughness={0.3}
+          metalness={0.3}
+          emissive="#2B1B0B"
+          emissiveIntensity={0.1}
         />
       </mesh>
 
-      {/* Center bar (divides board into two halves) */}
+      {/* Center bar (divides board into two halves) with enhanced materials */}
       <mesh position={[0, 0.01, 0]}>
         <boxGeometry args={[0.08, 0.02, BOARD_DEPTH]} />
         <meshStandardMaterial
           color="#654321"
-          roughness={0.8}
-          metalness={0}
+          roughness={0.4}
+          metalness={0.2}
+          emissive="#1C1206"
+          emissiveIntensity={0.1}
         />
       </mesh>
 
@@ -89,25 +90,23 @@ export const Board3D: React.FC<Board3DProps> = ({
             position={[point.x - BOARD_WIDTH / 2, 0, point.z]}
             rotation={[0, 0, rotation]}
           >
-            {/* Point triangle */}
+            {/* Point triangle with enhanced materials */}
             <mesh position={[0, 0.025, 0]}>
-              <coneGeometry args={[POINT_WIDTH / 2, POINT_HEIGHT, 3]} />
-              <meshStandardMaterial
-                color={point.color}
-                roughness={0.8}
-                metalness={0.05}
-              />
+              <coneGeometry args={[POINT_WIDTH / 2, POINT_HEIGHT, 32]} />
+              <meshStandardMaterial color={point.color} roughness={0.4} metalness={0.2} />
             </mesh>
 
             {/* Point base circle (for visual clarity) */}
             <mesh position={[0, 0.02, 0]}>
-              <cylinderGeometry args={[POINT_WIDTH / 2.5, POINT_WIDTH / 2.5, 0.002, 8]} />
+              <cylinderGeometry args={[POINT_WIDTH / 2.5, POINT_WIDTH / 2.5, 0.002, 16]} />
               <meshStandardMaterial
                 color="#FFFFFF"
-                roughness={0.3}
-                metalness={0.5}
+                roughness={0.2}
+                metalness={0.7}
                 transparent
                 opacity={0.3}
+                emissive="#FFFFFF"
+                emissiveIntensity={0.1}
               />
             </mesh>
 
@@ -121,14 +120,16 @@ export const Board3D: React.FC<Board3DProps> = ({
         );
       })}
 
-      {/* Wooden rail border */}
+      {/* Wooden rail border with enhanced materials */}
       {/* Left rail */}
       <mesh position={[-BOARD_WIDTH / 2 - 0.05, 0, 0]}>
         <boxGeometry args={[0.08, 0.06, BOARD_DEPTH * 1.2]} />
         <meshStandardMaterial
           color="#654321"
-          roughness={0.7}
-          metalness={0.1}
+          roughness={0.4}
+          metalness={0.3}
+          emissive="#1C1206"
+          emissiveIntensity={0.05}
         />
       </mesh>
 
@@ -137,8 +138,10 @@ export const Board3D: React.FC<Board3DProps> = ({
         <boxGeometry args={[0.08, 0.06, BOARD_DEPTH * 1.2]} />
         <meshStandardMaterial
           color="#654321"
-          roughness={0.7}
-          metalness={0.1}
+          roughness={0.4}
+          metalness={0.3}
+          emissive="#1C1206"
+          emissiveIntensity={0.05}
         />
       </mesh>
 
@@ -147,8 +150,10 @@ export const Board3D: React.FC<Board3DProps> = ({
         <boxGeometry args={[BOARD_WIDTH * 1.2, 0.06, 0.08]} />
         <meshStandardMaterial
           color="#654321"
-          roughness={0.7}
-          metalness={0.1}
+          roughness={0.4}
+          metalness={0.3}
+          emissive="#1C1206"
+          emissiveIntensity={0.05}
         />
       </mesh>
 
@@ -157,18 +162,22 @@ export const Board3D: React.FC<Board3DProps> = ({
         <boxGeometry args={[BOARD_WIDTH * 1.2, 0.06, 0.08]} />
         <meshStandardMaterial
           color="#654321"
-          roughness={0.7}
-          metalness={0.1}
+          roughness={0.4}
+          metalness={0.3}
+          emissive="#1C1206"
+          emissiveIntensity={0.05}
         />
       </mesh>
 
-      {/* Dice cup area (left side) */}
+      {/* Dice cup area (left side) with enhanced materials */}
       <mesh position={[-(BOARD_WIDTH / 2 + 0.15), 0.02, -(BOARD_DEPTH / 2 + 0.15)]}>
         <boxGeometry args={[0.2, 0.04, 0.2]} />
         <meshStandardMaterial
           color="#8B4513"
-          roughness={0.7}
-          metalness={0}
+          roughness={0.3}
+          metalness={0.3}
+          emissive="#2B1B0B"
+          emissiveIntensity={0.1}
         />
       </mesh>
 
@@ -178,10 +187,12 @@ export const Board3D: React.FC<Board3DProps> = ({
         <boxGeometry args={[0.15, 0.03, BOARD_DEPTH / 2]} />
         <meshStandardMaterial
           color="#FFFFFF"
-          roughness={0.9}
-          metalness={0}
+          roughness={0.8}
+          metalness={0.1}
           transparent
-          opacity={0.2}
+          opacity={0.15}
+          emissive="#FFFFFF"
+          emissiveIntensity={0.05}
         />
       </mesh>
 
@@ -190,10 +201,12 @@ export const Board3D: React.FC<Board3DProps> = ({
         <boxGeometry args={[0.15, 0.03, BOARD_DEPTH / 2]} />
         <meshStandardMaterial
           color="#000000"
-          roughness={0.9}
-          metalness={0}
+          roughness={0.8}
+          metalness={0.1}
           transparent
-          opacity={0.2}
+          opacity={0.15}
+          emissive="#000000"
+          emissiveIntensity={0.05}
         />
       </mesh>
     </group>

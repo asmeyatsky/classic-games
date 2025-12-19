@@ -4,7 +4,7 @@
  * Track user actions and game events for analytics
  */
 
-import { addBreadcrumb, setTag } from './client';
+import { addBreadcrumb, setTag } from './client.js';
 import { getLogger } from '@classic-games/logger';
 
 /**

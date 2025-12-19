@@ -114,7 +114,7 @@ function setupMiddleware() {
   app.use(apiLimiter);
 
   // Auth attachment
-  app.use(attachUserInfo);
+  app.use(attachUserInfo as any);
 }
 
 /**

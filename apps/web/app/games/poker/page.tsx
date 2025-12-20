@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { PokerGame } from '@classic-games/game-engine';
 
 // Dynamically import 3D components to prevent SSR issues
 const Canvas = dynamic(() => import('@react-three/fiber').then((mod) => mod.Canvas), {
@@ -36,59 +37,99 @@ const SMAA = dynamic(() => import('@react-three/postprocessing').then((mod) => m
 
 type GameState = 'landing' | 'setup' | 'playing' | 'finished';
 
-// Define types for our components
-interface CardData {
-  suit: 'hearts' | 'diamonds' | 'clubs' | 'spades';
-  rank: string;
-  faceUp: boolean;
-}
-
 export default function PokerPage() {
   const [gameState, setGameState] = useState<GameState>('landing');
-  const [pot, setPot] = useState(250);
-  const [playerChips, setPlayerChips] = useState(2500);
-  const [playerBet, setPlayerBet] = useState(50);
-  const [currentBet, setCurrentBet] = useState(50);
-  const [phase, setPhase] = useState('flop');
-  const [folded, setFolded] = useState(false);
+  const [pokerGame, setPokerGame] = useState<PokerGame | null>(null);
+  const [gameStateData, setGameStateData] = useState<any>(null);
+  const [playerId] = useState('player1');
+  const [opponentId] = useState('opponent1');
 
   const handleStartGame = () => {
+    const newGame = new PokerGame([playerId, opponentId], 2500);
+    newGame.startNewHand();
+    setPokerGame(newGame);
     setGameState('playing');
+    setGameStateData(newGame.getState());
   };
 
-  const communityCards: CardData[] = [
-    { suit: 'hearts', rank: 'K', faceUp: true },
-    { suit: 'diamonds', rank: 'Q', faceUp: true },
-    { suit: 'clubs', rank: 'J', faceUp: true },
-  ];
-
-  const playerHand: CardData[] = [
-    { suit: 'spades', rank: 'A', faceUp: true },
-    { suit: 'spades', rank: 'K', faceUp: true },
-  ];
-
   const handleFold = () => {
-    setFolded(true);
+    if (pokerGame) {
+      pokerGame.playerAction(playerId, 'fold');
+      setGameStateData(pokerGame.getState());
+    }
   };
 
   const handleCheck = () => {
-    alert('Check - your turn complete');
+    if (pokerGame) {
+      pokerGame.playerAction(playerId, 'check');
+      setGameStateData(pokerGame.getState());
+    }
   };
 
   const handleCall = () => {
-    const callAmount = currentBet - playerBet;
-    setPlayerBet(currentBet);
-    setPot(pot + callAmount);
-    setPlayerChips(playerChips - callAmount);
+    if (pokerGame) {
+      pokerGame.playerAction(playerId, 'call');
+      setGameStateData(pokerGame.getState());
+    }
   };
 
   const handleRaise = (amount: number) => {
-    const totalBet = currentBet + amount;
-    const raiseAmount = totalBet - playerBet;
-    setCurrentBet(totalBet);
-    setPlayerBet(totalBet);
-    setPot(pot + raiseAmount);
-    setPlayerChips(playerChips - raiseAmount);
+    if (pokerGame) {
+      pokerGame.playerAction(playerId, 'raise', amount);
+      setGameStateData(pokerGame.getState());
+    }
+  };
+
+  // Get current player's hand from the game state
+  const getPlayerHand = () => {
+    if (!gameStateData) return [];
+    const player = gameStateData.players.find((p: any) => p.id === playerId);
+    return player ? player.hand : [];
+  };
+
+  // Get community cards from the game state
+  const getCommunityCards = () => {
+    if (!gameStateData) return [];
+    return gameStateData.communityCards;
+  };
+
+  // Get current bet from the game state
+  const getCurrentBet = () => {
+    if (!gameStateData) return 0;
+    return gameStateData.currentBet;
+  };
+
+  // Get player chips from the game state
+  const getPlayerChips = () => {
+    if (!gameStateData) return 0;
+    const player = gameStateData.players.find((p: any) => p.id === playerId);
+    return player ? player.chips : 0;
+  };
+
+  // Get player bet from the game state
+  const getPlayerBet = () => {
+    if (!gameStateData) return 0;
+    const player = gameStateData.players.find((p: any) => p.id === playerId);
+    return player ? player.bet : 0;
+  };
+
+  // Get pot from the game state
+  const getPot = () => {
+    if (!gameStateData) return 0;
+    return gameStateData.pot;
+  };
+
+  // Get folded status from the game state
+  const isPlayerFolded = () => {
+    if (!gameStateData) return false;
+    const player = gameStateData.players.find((p: any) => p.id === playerId);
+    return player ? player.folded : false;
+  };
+
+  // Get current round from the game state
+  const getCurrentRound = () => {
+    if (!gameStateData) return 'pre_flop';
+    return gameStateData.round;
   };
 
   // LANDING SCREEN
@@ -170,23 +211,25 @@ export default function PokerPage() {
           <div className="text-center">
             <h1 className="text-3xl font-bold text-emerald-300">Texas Hold'em</h1>
             <p className="text-sm text-emerald-400">
-              {phase.charAt(0).toUpperCase() + phase.slice(1)}
+              {getCurrentRound()
+                .replace('_', ' ')
+                .replace(/\b\w/g, (l) => l.toUpperCase())}
             </p>
           </div>
           <div className="bg-emerald-900/60 px-6 py-3 rounded-xl border border-emerald-700/50">
             <p className="text-xs text-emerald-400">POT</p>
-            <p className="text-2xl font-bold text-yellow-400">${pot}</p>
+            <p className="text-2xl font-bold text-yellow-400">${getPot()}</p>
           </div>
         </div>
       </header>
 
       {/* Main Game Area */}
-      <main className="pt-28 pb-40 px-6">
-        <div className="max-w-4xl mx-auto">
+      <main className="pt-28 pb-40 px-4 sm:px-6">
+        <div className="w-full max-w-7xl mx-auto">
           {/* 3D Game Canvas */}
-          <div className="relative h-[500px] rounded-3xl overflow-hidden mb-8 shadow-2xl border-4 border-emerald-700/40 bg-gradient-to-br from-slate-900 to-emerald-950/30">
+          <div className="relative h-[70vh] min-h-[500px] rounded-3xl overflow-hidden mb-8 shadow-2xl border-4 border-emerald-700/40 bg-gradient-to-br from-slate-900 to-emerald-950/30">
             {typeof window !== 'undefined' ? (
-              <Canvas shadows camera={{ position: [0, 5, 8], fov: 50 }}>
+              <Canvas shadows camera={{ position: [0, 8, 12], fov: 45 }}>
                 <Suspense fallback={null}>
                   {/* Enhanced Luxurious Casino Lighting */}
                   <ambientLight intensity={0.3} />
@@ -222,7 +265,7 @@ export default function PokerPage() {
 
                   {/* Poker Table - Elliptical felt surface with enhanced materials */}
                   <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                    <cylinderGeometry args={[3, 3, 0.15, 64]} />
+                    <cylinderGeometry args={[4, 4, 0.15, 64]} />
                     <meshPhysicalMaterial
                       color="#0F5132"
                       roughness={0.4}
@@ -234,7 +277,7 @@ export default function PokerPage() {
 
                   {/* Table rail */}
                   <mesh position={[0, 0.08, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                    <torusGeometry args={[3, 0.15, 16, 64]} />
+                    <torusGeometry args={[4, 0.2, 16, 64]} />
                     <meshPhysicalMaterial
                       color="#8B4513"
                       roughness={0.6}
@@ -244,9 +287,9 @@ export default function PokerPage() {
                   </mesh>
 
                   {/* Community cards in center with enhanced materials */}
-                  {communityCards.map((card, i) => (
-                    <mesh key={`com-${i}`} position={[-1.5 + i * 0.8, 0.2, 0]}>
-                      <boxGeometry args={[0.6, 0.02, 0.9]} />
+                  {getCommunityCards().map((card: any, i: number) => (
+                    <mesh key={`com-${i}`} position={[-2 + i * 1.0, 0.2, 0]}>
+                      <boxGeometry args={[0.8, 0.02, 1.2]} />
                       <meshPhysicalMaterial
                         color="#FFFFFF"
                         roughness={0.2}
@@ -257,13 +300,13 @@ export default function PokerPage() {
                   ))}
 
                   {/* Player hand cards with enhanced materials */}
-                  {playerHand.map((card, i) => (
+                  {getPlayerHand().map((card: any, i: number) => (
                     <mesh
                       key={`player-${i}`}
-                      position={[-0.4 + i * 0.8, 0.2, 2.5]}
+                      position={[-0.5 + i * 1.0, 0.2, 3.5]}
                       rotation={[0, Math.PI, 0]}
                     >
-                      <boxGeometry args={[0.6, 0.02, 0.9]} />
+                      <boxGeometry args={[0.8, 0.02, 1.2]} />
                       <meshPhysicalMaterial
                         color="#FFFFFF"
                         roughness={0.2}
@@ -274,13 +317,13 @@ export default function PokerPage() {
                   ))}
 
                   {/* Player chip stacks with enhanced materials */}
-                  {[...Array(8)].map((_, i) => (
+                  {Array.from({ length: Math.floor(getPlayerChips() / 100) }).map((_, i) => (
                     <mesh
-                      key={`chip-${i}`}
-                      position={[0.5 + i * 0.1, 0.05 + i * 0.04, 2]}
+                      key={`player-chip-${i}`}
+                      position={[0.7 + i * 0.15, 0.05 + i * 0.04, 2.5]}
                       rotation={[-Math.PI / 2, 0, 0]}
                     >
-                      <cylinderGeometry args={[0.15, 0.15, 0.03, 32]} />
+                      <cylinderGeometry args={[0.2, 0.2, 0.04, 32]} />
                       <meshStandardMaterial
                         color="#F59E0B"
                         roughness={0.3}
@@ -292,13 +335,13 @@ export default function PokerPage() {
                   ))}
 
                   {/* Pot chips in center with enhanced materials */}
-                  {[...Array(5)].map((_, i) => (
+                  {Array.from({ length: Math.floor(getPot() / 100) }).map((_, i) => (
                     <mesh
-                      key={`pot-${i}`}
-                      position={[i * 0.1 - 0.2, 0.05 + i * 0.04, 0.8]}
+                      key={`pot-chip-${i}`}
+                      position={[i * 0.15 - 0.3, 0.05 + i * 0.04, 1.2]}
                       rotation={[-Math.PI / 2, 0, 0]}
                     >
-                      <cylinderGeometry args={[0.15, 0.15, 0.03, 32]} />
+                      <cylinderGeometry args={[0.2, 0.2, 0.04, 32]} />
                       <meshStandardMaterial
                         color="#DC2626"
                         roughness={0.3}
@@ -324,8 +367,8 @@ export default function PokerPage() {
                   <OrbitControls
                     enablePan={false}
                     enableZoom={true}
-                    minDistance={3}
-                    maxDistance={12}
+                    minDistance={5}
+                    maxDistance={20}
                     maxPolarAngle={Math.PI / 2.2}
                   />
                 </Suspense>
@@ -345,7 +388,7 @@ export default function PokerPage() {
             <div className="text-center mb-4">
               <p className="text-emerald-300 text-sm mb-2">COMMUNITY CARDS</p>
               <div className="flex justify-center gap-2">
-                {communityCards.map((card, i) => (
+                {getCommunityCards().map((card: any, i: number) => (
                   <div
                     key={`info-com-${i}`}
                     className="w-8 h-12 bg-gradient-to-br from-red-600 to-red-800 rounded flex items-center justify-center text-white text-xs"
@@ -366,7 +409,7 @@ export default function PokerPage() {
             <div className="text-center">
               <p className="text-emerald-300 text-sm mb-2">YOUR HAND</p>
               <div className="flex justify-center gap-2">
-                {playerHand.map((card, i) => (
+                {getPlayerHand().map((card: any, i: number) => (
                   <div
                     key={`info-player-${i}`}
                     className="w-8 h-12 bg-gradient-to-br from-emerald-600 to-emerald-800 rounded flex items-center justify-center text-white text-xs"
@@ -389,15 +432,17 @@ export default function PokerPage() {
           <div className="grid grid-cols-2 gap-6 mb-8">
             <div className="bg-emerald-900/40 rounded-2xl p-6 border border-emerald-700/30">
               <p className="text-emerald-400 text-sm mb-2">YOUR CHIPS</p>
-              <p className="text-3xl font-bold text-green-400">${playerChips}</p>
-              <p className="text-sm text-emerald-400 mt-3">Current Bet: ${playerBet}</p>
+              <p className="text-3xl font-bold text-green-400">${getPlayerChips()}</p>
+              <p className="text-sm text-emerald-400 mt-3">Current Bet: ${getPlayerBet()}</p>
             </div>
             <div className="bg-emerald-900/40 rounded-2xl p-6 border border-emerald-700/30">
               <p className="text-emerald-400 text-sm mb-2">GAME STATUS</p>
-              <p className={`text-xl font-bold ${folded ? 'text-red-400' : 'text-yellow-400'}`}>
-                {folded ? 'FOLDED' : 'ACTIVE'}
+              <p
+                className={`text-xl font-bold ${isPlayerFolded() ? 'text-red-400' : 'text-yellow-400'}`}
+              >
+                {isPlayerFolded() ? 'FOLDED' : 'ACTIVE'}
               </p>
-              <p className="text-sm text-emerald-400 mt-3">Min Bet: ${currentBet}</p>
+              <p className="text-sm text-emerald-400 mt-3">Min Bet: ${getCurrentBet()}</p>
             </div>
           </div>
         </div>
@@ -407,15 +452,17 @@ export default function PokerPage() {
       <footer className="fixed bottom-0 left-0 right-0 bg-emerald-950/95 backdrop-blur-xl border-t border-emerald-700/50 py-6 px-6">
         <div className="max-w-4xl mx-auto">
           <p className="text-center text-emerald-400 mb-4">
-            {folded ? 'You have folded. Waiting for hand to complete...' : 'Your turn to act'}
+            {isPlayerFolded()
+              ? 'You have folded. Waiting for hand to complete...'
+              : 'Your turn to act'}
           </p>
 
           <div className="flex gap-3 justify-center flex-wrap">
             <button
               onClick={handleFold}
-              disabled={folded}
+              disabled={isPlayerFolded()}
               className={`px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
-                folded
+                isPlayerFolded()
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   : 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95'
               }`}
@@ -425,9 +472,9 @@ export default function PokerPage() {
 
             <button
               onClick={handleCheck}
-              disabled={folded || currentBet > playerBet}
+              disabled={isPlayerFolded() || getCurrentBet() > getPlayerBet()}
               className={`px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
-                folded || currentBet > playerBet
+                isPlayerFolded() || getCurrentBet() > getPlayerBet()
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   : 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95'
               }`}
@@ -437,21 +484,21 @@ export default function PokerPage() {
 
             <button
               onClick={handleCall}
-              disabled={folded || currentBet === playerBet}
+              disabled={isPlayerFolded() || getCurrentBet() === getPlayerBet()}
               className={`px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
-                folded || currentBet === playerBet
+                isPlayerFolded() || getCurrentBet() === getPlayerBet()
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95'
               }`}
             >
-              CALL ${currentBet - playerBet}
+              CALL ${getCurrentBet() - getPlayerBet()}
             </button>
 
             <button
               onClick={() => handleRaise(50)}
-              disabled={folded}
+              disabled={isPlayerFolded()}
               className={`px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
-                folded
+                isPlayerFolded()
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95'
               }`}
@@ -461,9 +508,9 @@ export default function PokerPage() {
 
             <button
               onClick={() => handleRaise(100)}
-              disabled={folded}
+              disabled={isPlayerFolded()}
               className={`px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
-                folded
+                isPlayerFolded()
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95'
               }`}

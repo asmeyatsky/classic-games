@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ScrabbleBoard3D, Tile3D } from '@classic-games/three-components';
+import { ScrabbleGame } from '@classic-games/game-engine';
 
 // Dynamically import Three.js components to prevent SSR issues
 const Canvas = dynamic(() => import('@react-three/fiber').then((mod) => mod.Canvas), {
@@ -39,17 +39,19 @@ type GameState = 'landing' | 'setup' | 'playing' | 'finished';
 
 export default function ScrabblePage() {
   const [gameState, setGameState] = useState<GameState>('landing');
-  const [playerScore, setPlayerScore] = useState(0);
-  const [opponentScore, setOpponentScore] = useState(0);
+  const [scrabbleGame, setScrabbleGame] = useState<ScrabbleGame | null>(null);
+  const [gameStateData, setGameStateData] = useState<any>(null);
+  const [playerId] = useState('player1');
+  const [opponentId] = useState('opponent1');
   const [selectedTiles, setSelectedTiles] = useState<number[]>([]);
-  const [phase, setPhase] = useState('playing');
+  const [wordPlacement, setWordPlacement] = useState({ row: 7, col: 7, direction: 'horizontal' });
 
   const handleStartGame = () => {
+    const newGame = new ScrabbleGame([playerId, opponentId]);
+    setScrabbleGame(newGame);
     setGameState('playing');
+    setGameStateData(newGame.getState());
   };
-
-  const playerTiles = ['A', 'E', 'I', 'O', 'U', 'R', 'S'];
-  const boardSize = 15;
 
   const handleTileSelect = (index: number) => {
     if (selectedTiles.includes(index)) {
@@ -60,15 +62,68 @@ export default function ScrabblePage() {
   };
 
   const handlePlayWord = () => {
-    if (selectedTiles.length > 0) {
-      const points = selectedTiles.length * 10;
-      setPlayerScore(playerScore + points);
-      setSelectedTiles([]);
+    if (scrabbleGame && selectedTiles.length > 0) {
+      // In a real implementation, we would get the actual word formed
+      // For now, we'll use a placeholder word
+      const placeholderWord = 'TEST'; // This would be calculated based on selected tiles and board position
+
+      const result = scrabbleGame.placeWord({
+        word: placeholderWord,
+        startRow: wordPlacement.row,
+        startCol: wordPlacement.col,
+        direction: wordPlacement.direction,
+        tiles: selectedTiles.map(
+          (i) => getPlayerRack()[i] || { letter: 'A', value: 1, isBlank: false }
+        ), // Use actual tiles from player's rack
+      });
+
+      if (result.valid) {
+        setGameStateData(scrabbleGame.getState());
+        setSelectedTiles([]);
+      }
     }
   };
 
   const handlePass = () => {
-    setSelectedTiles([]);
+    if (scrabbleGame) {
+      scrabbleGame.skipTurn();
+      setGameStateData(scrabbleGame.getState());
+      setSelectedTiles([]);
+    }
+  };
+
+  // Get current player's rack from the game state
+  const getPlayerRack = () => {
+    if (!gameStateData) return [];
+    return gameStateData.players[gameStateData.currentPlayerIndex]?.rack || [];
+  };
+
+  // Get current player's score from the game state
+  const getPlayerScore = () => {
+    if (!gameStateData) return 0;
+    return gameStateData.players[gameStateData.currentPlayerIndex]?.score || 0;
+  };
+
+  // Get opponent's score from the game state
+  const getOpponentScore = () => {
+    if (!gameStateData) return 0;
+    const opponentIndex = (gameStateData.currentPlayerIndex + 1) % gameStateData.players.length;
+    return gameStateData.players[opponentIndex]?.score || 0;
+  };
+
+  // Get board from the game state
+  const getBoard = () => {
+    if (!gameStateData)
+      return Array(15)
+        .fill(null)
+        .map(() => Array(15).fill(null));
+    return gameStateData.board;
+  };
+
+  // Get remaining tiles in bag from the game state
+  const getTilesRemaining = () => {
+    if (!gameStateData) return 0;
+    return gameStateData.tileBag;
   };
 
   // LANDING SCREEN
@@ -150,23 +205,23 @@ export default function ScrabblePage() {
           <div className="text-center">
             <h1 className="text-3xl font-bold text-indigo-300">Scrabble</h1>
             <p className="text-sm text-indigo-400">
-              {phase === 'playing' ? 'Word Game' : 'Game Over'}
+              {gameState === 'playing' ? 'Word Game' : 'Game Over'}
             </p>
           </div>
           <div className="bg-indigo-900/60 px-6 py-3 rounded-xl border border-indigo-700/50">
             <p className="text-xs text-indigo-400">TILES LEFT</p>
-            <p className="text-xl font-bold text-cyan-400">87</p>
+            <p className="text-xl font-bold text-cyan-400">{getTilesRemaining()}</p>
           </div>
         </div>
       </header>
 
       {/* Main Game Area */}
-      <main className="pt-28 pb-40 px-6">
-        <div className="max-w-4xl mx-auto">
+      <main className="pt-28 pb-40 px-4 sm:px-6">
+        <div className="w-full max-w-7xl mx-auto">
           {/* 3D Game Canvas */}
-          <div className="relative h-[500px] rounded-3xl overflow-hidden mb-8 shadow-2xl border-4 border-indigo-700/40 bg-gradient-to-br from-slate-900 to-indigo-950/30">
+          <div className="relative h-[70vh] min-h-[500px] rounded-3xl overflow-hidden mb-8 shadow-2xl border-4 border-indigo-700/40 bg-gradient-to-br from-slate-900 to-indigo-950/30">
             {typeof window !== 'undefined' && (
-              <Canvas shadows camera={{ position: [0, 5, 3], fov: 60 }}>
+              <Canvas shadows camera={{ position: [0, 8, 6], fov: 50 }}>
                 <Suspense fallback={null}>
                   {/* Enhanced Luxurious Game Lighting */}
                   <ambientLight intensity={0.3} />
@@ -177,10 +232,10 @@ export default function ScrabblePage() {
                     shadow-mapSize-width={2048}
                     shadow-mapSize-height={2048}
                     shadow-camera-far={20}
-                    shadow-camera-left={-5}
-                    shadow-camera-right={5}
-                    shadow-camera-top={5}
-                    shadow-camera-bottom={-5}
+                    shadow-camera-left={-8}
+                    shadow-camera-right={8}
+                    shadow-camera-top={8}
+                    shadow-camera-bottom={-8}
                   />
                   <directionalLight position={[-5, 8, -5]} intensity={0.7} color="#818cf8" />
                   <pointLight
@@ -201,54 +256,34 @@ export default function ScrabblePage() {
                   />
 
                   {/* 3D Scrabble Board */}
-                  <ScrabbleBoard3D size={0.8} />
+                  <ScrabbleBoard3D size={1.2} />
 
-                  {/* Player rack of tiles - simplified for now */}
-                  {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-                    <Tile3D key={i} letter="A" value={1} position={[i * 0.08 - 0.24, 0.1, -0.6]} />
+                  {/* Player rack of tiles - based on actual game state */}
+                  {getPlayerRack().map((tile: any, i: number) => (
+                    <Tile3D
+                      key={i}
+                      letter={tile.letter}
+                      value={tile.value}
+                      position={[i * 0.12 - 0.36, 0.15, -0.9]}
+                    />
                   ))}
 
-                  {/* Sample placed tiles on board */}
-                  <Tile3D
-                    letter="S"
-                    value={1}
-                    position={[(7 - 7) * 0.05 + 0.025, 0.01, (7 - 7) * 0.05 + 0.025]}
-                  />
-                  <Tile3D
-                    letter="C"
-                    value={3}
-                    position={[(7 - 7) * 0.05 + 0.075, 0.01, (7 - 7) * 0.05 + 0.025]}
-                  />
-                  <Tile3D
-                    letter="R"
-                    value={1}
-                    position={[(7 - 7) * 0.05 + 0.125, 0.01, (7 - 7) * 0.05 + 0.025]}
-                  />
-                  <Tile3D
-                    letter="A"
-                    value={1}
-                    position={[(7 - 7) * 0.05 + 0.175, 0.01, (7 - 7) * 0.05 + 0.025]}
-                  />
-                  <Tile3D
-                    letter="B"
-                    value={3}
-                    position={[(7 - 7) * 0.05 + 0.225, 0.01, (7 - 7) * 0.05 + 0.025]}
-                  />
-                  <Tile3D
-                    letter="B"
-                    value={3}
-                    position={[(7 - 7) * 0.05 + 0.275, 0.01, (7 - 7) * 0.05 + 0.025]}
-                  />
-                  <Tile3D
-                    letter="L"
-                    value={1}
-                    position={[(7 - 7) * 0.05 + 0.325, 0.01, (7 - 7) * 0.05 + 0.025]}
-                  />
-                  <Tile3D
-                    letter="E"
-                    value={1}
-                    position={[(7 - 7) * 0.05 + 0.375, 0.01, (7 - 7) * 0.05 + 0.025]}
-                  />
+                  {/* Placed tiles on board based on actual game state */}
+                  {getBoard().map((row: any[], rowIndex: number) =>
+                    row.map((tile: any, colIndex: number) => {
+                      if (tile) {
+                        return (
+                          <Tile3D
+                            key={`${rowIndex}-${colIndex}`}
+                            letter={tile.letter}
+                            value={tile.value}
+                            position={[colIndex * 0.075 + 0.0375, 0.015, rowIndex * 0.075 + 0.0375]}
+                          />
+                        );
+                      }
+                      return null;
+                    })
+                  )}
 
                   <Environment preset="apartment" />
                   <EffectComposer>
@@ -266,8 +301,8 @@ export default function ScrabblePage() {
                     enablePan={false}
                     enableZoom={true}
                     enableRotate={true}
-                    minDistance={2}
-                    maxDistance={8}
+                    minDistance={3}
+                    maxDistance={12}
                     maxPolarAngle={Math.PI / 2.2}
                   />
                 </Suspense>
@@ -289,7 +324,7 @@ export default function ScrabblePage() {
             <div className="bg-indigo-900/40 rounded-2xl p-6 border border-indigo-700/30">
               <p className="text-indigo-400 text-sm font-bold mb-4">YOUR TILES</p>
               <div className="flex gap-2 flex-wrap mb-4">
-                {playerTiles.map((tile, i) => (
+                {getPlayerRack().map((tile: any, i: number) => (
                   <button
                     key={i}
                     onClick={() => handleTileSelect(i)}
@@ -299,27 +334,34 @@ export default function ScrabblePage() {
                         : 'bg-amber-200 text-gray-900 hover:bg-amber-300'
                     }`}
                   >
-                    {tile}
+                    {tile.letter}
                   </button>
                 ))}
               </div>
               <p className="text-indigo-400 text-sm font-bold mb-2">YOUR SCORE</p>
-              <p className="text-4xl font-bold text-cyan-400">{playerScore}</p>
+              <p className="text-4xl font-bold text-cyan-400">{getPlayerScore()}</p>
             </div>
 
             {/* Opponent Info */}
             <div className="bg-indigo-900/40 rounded-2xl p-6 border border-indigo-700/30 opacity-60">
               <p className="text-indigo-400 text-sm font-bold mb-4">OPPONENT TILES</p>
               <div className="flex gap-2 flex-wrap mb-4">
-                {Array.from({ length: 7 }, (_, i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-lg bg-gray-400 border border-gray-500"
-                  />
-                ))}
+                {Array.from(
+                  {
+                    length:
+                      gameStateData?.players?.[(gameStateData.currentPlayerIndex + 1) % 2]?.rack
+                        ?.length || 7,
+                  },
+                  (_, i) => (
+                    <div
+                      key={i}
+                      className="w-10 h-10 rounded-lg bg-gray-400 border border-gray-500"
+                    />
+                  )
+                )}
               </div>
               <p className="text-indigo-400 text-sm font-bold mb-2">OPPONENT SCORE</p>
-              <p className="text-4xl font-bold text-orange-400">{opponentScore}</p>
+              <p className="text-4xl font-bold text-orange-400">{getOpponentScore()}</p>
             </div>
           </div>
         </div>

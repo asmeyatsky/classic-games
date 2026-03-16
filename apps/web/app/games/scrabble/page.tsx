@@ -1,56 +1,272 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ScrabbleGame } from '@classic-games/game-engine';
+import { ScrabbleGame, ScrabbleCoach } from '@classic-games/game-engine';
 
-// Dynamically import Three.js components to prevent SSR issues
-const Canvas = dynamic(() => import('@react-three/fiber').then((mod) => mod.Canvas), {
+const Canvas = dynamic(() => import('@react-three/fiber').then((m) => m.Canvas), { ssr: false });
+const OrbitControls = dynamic(() => import('@react-three/drei').then((m) => m.OrbitControls), {
   ssr: false,
 });
-const OrbitControls = dynamic(() => import('@react-three/drei').then((mod) => mod.OrbitControls), {
+const Environment = dynamic(() => import('@react-three/drei').then((m) => m.Environment), {
   ssr: false,
 });
-const Environment = dynamic(() => import('@react-three/drei').then((mod) => mod.Environment), {
-  ssr: false,
-});
-
-// Dynamically import postprocessing components
 const EffectComposer = dynamic(
-  () => import('@react-three/postprocessing').then((mod) => mod.EffectComposer),
+  () => import('@react-three/postprocessing').then((m) => m.EffectComposer),
   { ssr: false }
 );
-const Bloom = dynamic(() => import('@react-three/postprocessing').then((mod) => mod.Bloom), {
+const Bloom = dynamic(() => import('@react-three/postprocessing').then((m) => m.Bloom), {
   ssr: false,
 });
-const DepthOfField = dynamic(
-  () => import('@react-three/postprocessing').then((mod) => mod.DepthOfField),
-  { ssr: false }
-);
-const Vignette = dynamic(() => import('@react-three/postprocessing').then((mod) => mod.Vignette), {
+const Vignette = dynamic(() => import('@react-three/postprocessing').then((m) => m.Vignette), {
   ssr: false,
 });
-const SMAA = dynamic(() => import('@react-three/postprocessing').then((mod) => mod.SMAA), {
+const SMAA = dynamic(() => import('@react-three/postprocessing').then((m) => m.SMAA), {
   ssr: false,
 });
 
-type GameState = 'landing' | 'setup' | 'playing' | 'finished';
+const ScrabbleBoard3D = dynamic(
+  () => import('@classic-games/three-components').then((m) => m.ScrabbleBoard3D),
+  { ssr: false }
+);
+const Tile3D = dynamic(() => import('@classic-games/three-components').then((m) => m.Tile3D), {
+  ssr: false,
+});
+const AICoach = dynamic(() => import('../../../components/AICoach'), { ssr: false });
+
+type GamePhase = 'landing' | 'playing' | 'finished';
+
+// Common short words the AI can attempt
+const AI_WORDS = [
+  'AT',
+  'TO',
+  'IN',
+  'IT',
+  'IS',
+  'ON',
+  'NO',
+  'DO',
+  'GO',
+  'SO',
+  'UP',
+  'AN',
+  'OR',
+  'IF',
+  'AM',
+  'HE',
+  'ME',
+  'WE',
+  'BE',
+  'AS',
+  'OF',
+  'BY',
+  'MY',
+  'US',
+  'THE',
+  'AND',
+  'FOR',
+  'ARE',
+  'NOT',
+  'YOU',
+  'ALL',
+  'CAN',
+  'HER',
+  'WAS',
+  'ONE',
+  'OUR',
+  'OUT',
+  'DAY',
+  'HAD',
+  'HAS',
+  'HIS',
+  'HOW',
+  'ITS',
+  'MAY',
+  'NEW',
+  'OLD',
+  'SEE',
+  'TWO',
+  'WAY',
+  'WHO',
+  'DID',
+  'GET',
+  'LET',
+  'SAY',
+  'SHE',
+  'TOO',
+  'USE',
+  'CAT',
+  'DOG',
+  'RUN',
+  'SIT',
+  'SET',
+  'PUT',
+  'TEN',
+  'RED',
+  'BIG',
+  'BOX',
+  'ATE',
+  'AGE',
+  'AID',
+  'AIM',
+  'AIR',
+  'ADD',
+  'ACE',
+  'ART',
+  'ARM',
+  'AXE',
+];
 
 export default function ScrabblePage() {
-  const [gameState, setGameState] = useState<GameState>('landing');
-  const [scrabbleGame, setScrabbleGame] = useState<ScrabbleGame | null>(null);
-  const [gameStateData, setGameStateData] = useState<any>(null);
-  const [playerId] = useState('player1');
-  const [opponentId] = useState('opponent1');
+  const [phase, setPhase] = useState<GamePhase>('landing');
+  const [game, setGame] = useState<ScrabbleGame | null>(null);
+  const [state, setState] = useState<any>(null);
+  const [coachOpen, setCoachOpen] = useState(true);
   const [selectedTiles, setSelectedTiles] = useState<number[]>([]);
-  const [wordPlacement, setWordPlacement] = useState({ row: 7, col: 7, direction: 'horizontal' });
+  const [wordInput, setWordInput] = useState('');
+  const [placement, setPlacement] = useState({
+    row: 7,
+    col: 7,
+    direction: 'horizontal' as 'horizontal' | 'vertical',
+  });
+  const [lastMessage, setLastMessage] = useState('');
+  const [isAIThinking, setIsAIThinking] = useState(false);
+
+  const playerId = 'player';
+  const opponentId = 'ai-opponent';
+
+  const refreshState = useCallback(() => {
+    if (!game) return null;
+    const s = game.getState();
+    setState(s);
+    return s;
+  }, [game]);
+
+  // AI opponent turn
+  useEffect(() => {
+    if (!game || !state || phase !== 'playing') return;
+    if (state.currentPlayerIndex !== 1) return; // AI is player index 1
+    if (game.isGameOver()) {
+      setPhase('finished');
+      return;
+    }
+
+    setIsAIThinking(true);
+    const timer = setTimeout(() => {
+      const aiRack = state.players[1]?.rack || [];
+      const aiLetters = aiRack.map((t: any) => t.letter);
+      let played = false;
+
+      // Try to find a word the AI can play
+      for (const word of AI_WORDS) {
+        const wordLetters = word.split('');
+        const rackCopy = [...aiLetters];
+        let canPlay = true;
+
+        for (const letter of wordLetters) {
+          const idx = rackCopy.indexOf(letter);
+          if (idx === -1) {
+            canPlay = false;
+            break;
+          }
+          rackCopy.splice(idx, 1);
+        }
+
+        if (canPlay) {
+          // Find a valid position
+          const board = state.board;
+          const isFirstMove = board.every((row: any[]) => row.every((cell: any) => cell === null));
+
+          let startRow = 7;
+          let startCol = isFirstMove ? 7 : -1;
+          let direction: 'horizontal' | 'vertical' = 'horizontal';
+
+          if (!isFirstMove) {
+            // Find an open spot adjacent to existing tiles
+            for (let r = 0; r < 15 && startCol === -1; r++) {
+              for (let c = 0; c < 15 && startCol === -1; c++) {
+                if (board[r][c] !== null) {
+                  // Try horizontal
+                  if (c + word.length <= 15) {
+                    let fits = true;
+                    for (let i = 0; i < word.length; i++) {
+                      if (board[r][c + i] !== null) {
+                        fits = false;
+                        break;
+                      }
+                    }
+                    if (fits) {
+                      startRow = r;
+                      startCol = c;
+                      direction = 'horizontal';
+                    }
+                  }
+                  // Try below
+                  if (startCol === -1 && r + word.length <= 15) {
+                    let fits = true;
+                    for (let i = 0; i < word.length; i++) {
+                      if (board[r + i][c] !== null) {
+                        fits = false;
+                        break;
+                      }
+                    }
+                    if (fits) {
+                      startRow = r;
+                      startCol = c;
+                      direction = 'vertical';
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          if (startCol >= 0) {
+            const tiles = wordLetters.map((letter) => {
+              const tile = aiRack.find((t: any) => t.letter === letter);
+              return tile || { letter, value: 1, isBlank: false };
+            });
+
+            const result = game.placeWord({
+              word,
+              startRow,
+              startCol,
+              direction,
+              tiles,
+            });
+
+            if (result.valid) {
+              setLastMessage(`AI played "${word}" for ${result.score} points`);
+              played = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!played) {
+        game.skipTurn();
+        setLastMessage('AI skipped their turn');
+      }
+
+      const newState = refreshState();
+      setIsAIThinking(false);
+
+      if (game.isGameOver()) {
+        setPhase('finished');
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [state?.currentPlayerIndex, game, phase, refreshState]);
 
   const handleStartGame = () => {
     const newGame = new ScrabbleGame([playerId, opponentId]);
-    setScrabbleGame(newGame);
-    setGameState('playing');
-    setGameStateData(newGame.getState());
+    setGame(newGame);
+    setState(newGame.getState());
+    setPhase('playing');
+    setLastMessage('');
   };
 
   const handleTileSelect = (index: number) => {
@@ -62,137 +278,112 @@ export default function ScrabblePage() {
   };
 
   const handlePlayWord = () => {
-    if (scrabbleGame && selectedTiles.length > 0) {
-      // In a real implementation, we would get the actual word formed
-      // For now, we'll use a placeholder word
-      const placeholderWord = 'TEST'; // This would be calculated based on selected tiles and board position
+    if (!game || !wordInput.trim()) return;
 
-      const result = scrabbleGame.placeWord({
-        word: placeholderWord,
-        startRow: wordPlacement.row,
-        startCol: wordPlacement.col,
-        direction: wordPlacement.direction,
-        tiles: selectedTiles.map(
-          (i) => getPlayerRack()[i] || { letter: 'A', value: 1, isBlank: false }
-        ), // Use actual tiles from player's rack
-      });
+    const rack = state.players[0]?.rack || [];
+    const word = wordInput.toUpperCase();
+    const tiles = word.split('').map((letter: string) => {
+      const tile = rack.find((t: any) => t.letter === letter);
+      return tile || { letter, value: 1, isBlank: false };
+    });
 
-      if (result.valid) {
-        setGameStateData(scrabbleGame.getState());
-        setSelectedTiles([]);
-      }
-    }
-  };
+    const result = game.placeWord({
+      word,
+      startRow: placement.row,
+      startCol: placement.col,
+      direction: placement.direction,
+      tiles,
+    });
 
-  const handlePass = () => {
-    if (scrabbleGame) {
-      scrabbleGame.skipTurn();
-      setGameStateData(scrabbleGame.getState());
+    if (result.valid) {
+      setLastMessage(`You played "${word}" for ${result.score} points!`);
+      setWordInput('');
       setSelectedTiles([]);
+    } else {
+      setLastMessage(result.message);
     }
+
+    refreshState();
+    if (game.isGameOver()) setPhase('finished');
   };
 
-  // Get current player's rack from the game state
-  const getPlayerRack = () => {
-    if (!gameStateData) return [];
-    return gameStateData.players[gameStateData.currentPlayerIndex]?.rack || [];
+  const handleSkip = () => {
+    if (!game) return;
+    game.skipTurn();
+    setLastMessage('You skipped your turn');
+    refreshState();
+    if (game.isGameOver()) setPhase('finished');
   };
 
-  // Get current player's score from the game state
-  const getPlayerScore = () => {
-    if (!gameStateData) return 0;
-    return gameStateData.players[gameStateData.currentPlayerIndex]?.score || 0;
-  };
+  const playerRack = state?.players?.[0]?.rack || [];
+  const playerScore = state?.players?.[0]?.score || 0;
+  const opponentScore = state?.players?.[1]?.score || 0;
+  const isMyTurn = state?.currentPlayerIndex === 0;
+  const coachAnalysis = state && isMyTurn ? ScrabbleCoach.analyze(state, 0) : null;
 
-  // Get opponent's score from the game state
-  const getOpponentScore = () => {
-    if (!gameStateData) return 0;
-    const opponentIndex = (gameStateData.currentPlayerIndex + 1) % gameStateData.players.length;
-    return gameStateData.players[opponentIndex]?.score || 0;
-  };
-
-  // Get board from the game state
-  const getBoard = () => {
-    if (!gameStateData)
-      return Array(15)
-        .fill(null)
-        .map(() => Array(15).fill(null));
-    return gameStateData.board;
-  };
-
-  // Get remaining tiles in bag from the game state
-  const getTilesRemaining = () => {
-    if (!gameStateData) return 0;
-    return gameStateData.tileBag;
-  };
-
-  // LANDING SCREEN
-  if (gameState === 'landing') {
+  // LANDING
+  if (phase === 'landing') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-indigo-100 text-slate-900 flex items-center justify-center p-6">
-        <div className="max-w-4xl w-full">
-          <div className="bg-white rounded-3xl border-4 border-indigo-600 shadow-2xl p-12">
-            {/* Header */}
-            <div className="text-center mb-12">
-              <div className="text-9xl mb-6">📝</div>
-              <h1 className="text-7xl font-bold mb-4 text-indigo-900">Scrabble</h1>
-              <div className="h-2 w-48 mx-auto bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"></div>
-              <p className="mt-6 text-2xl text-indigo-800 font-semibold">
-                The classic word-building game
-              </p>
-            </div>
-
-            {/* Rules */}
-            <div className="mb-10 bg-indigo-50 rounded-2xl p-8 border-2 border-indigo-300">
-              <h2 className="text-4xl font-bold text-indigo-900 mb-6 text-center">How to Play</h2>
-              <div className="grid gap-5">
-                {[
-                  'Use letter tiles to create words on the board, connecting to existing words',
-                  'Each letter has a point value - longer and rarer words score more points',
-                  'Take advantage of premium squares to double or triple your letter and word scores',
-                  'First player to use all their tiles or highest score when tiles run out wins',
-                ].map((rule, index) => (
-                  <div key={index} className="flex items-start gap-4 text-lg">
-                    <span className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                      {index + 1}
-                    </span>
-                    <p className="leading-relaxed text-slate-800 pt-2 text-xl">{rule}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Start Button */}
-            <button
-              onClick={handleStartGame}
-              className="w-full py-7 px-10 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-3xl rounded-2xl shadow-2xl hover:shadow-indigo-500/50 transition-all duration-300 transform hover:scale-105 active:scale-95"
-            >
-              ✨ Start Playing ✨
-            </button>
-
-            <Link
-              href="/"
-              className="block text-center mt-6 text-indigo-700 hover:text-indigo-900 transition-colors text-lg font-semibold"
-            >
-              ← Back to Games
-            </Link>
+      <div className="min-h-screen bg-[#06060d] text-white flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full">
+          <div className="text-center mb-12">
+            <div className="text-8xl mb-6 opacity-90">W</div>
+            <h1 className="text-6xl font-black tracking-tight mb-3">
+              <span className="bg-gradient-to-r from-indigo-400 to-purple-300 text-transparent bg-clip-text">
+                Scrabble
+              </span>
+            </h1>
+            <p className="text-slate-400 text-lg">with AI Word Coach</p>
           </div>
+
+          <div className="bg-slate-900/60 backdrop-blur rounded-2xl p-8 border border-indigo-900/30 mb-8">
+            <div className="grid gap-4 text-slate-300">
+              {[
+                'Build words on the board connecting to existing tiles',
+                'Each letter has a point value - longer and rarer words score more',
+                'Premium squares multiply letter or word scores (2x and 3x)',
+                'AI coach analyzes your rack balance, premium opportunities, and strategy',
+              ].map((rule, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <span className="w-7 h-7 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-sm font-bold shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <p className="text-sm leading-relaxed">{rule}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={handleStartGame}
+            className="w-full py-5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xl rounded-xl transition-all duration-200 active:scale-[0.98]"
+            style={{ boxShadow: '0 0 40px rgba(99,102,241,0.2)' }}
+          >
+            Start Game
+          </button>
+
+          <Link
+            href="/"
+            className="block text-center mt-6 text-slate-500 hover:text-slate-300 transition-colors text-sm"
+          >
+            Back to Games
+          </Link>
         </div>
       </div>
     );
   }
 
-  // GAME SCREEN
+  // GAME
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-950 via-indigo-900 to-indigo-950 text-white">
+    <div className="min-h-screen bg-[#06060d] text-white">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-indigo-950/80 backdrop-blur-xl border-b border-indigo-800/50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-30 bg-[#06060d]/90 backdrop-blur-xl border-b border-indigo-900/30">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link
             href="/"
-            className="flex items-center gap-2 text-indigo-300 hover:text-white transition-colors"
+            className="text-slate-500 hover:text-indigo-400 transition-colors text-sm flex items-center gap-1.5"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -200,211 +391,290 @@ export default function ScrabblePage() {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            Back to Games
+            Exit
           </Link>
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-indigo-300">Scrabble</h1>
-            <p className="text-sm text-indigo-400">
-              {gameState === 'playing' ? 'Word Game' : 'Game Over'}
-            </p>
+
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <p className="text-[10px] text-slate-600 uppercase tracking-widest">Turn</p>
+              <p className={`text-sm font-bold ${isMyTurn ? 'text-indigo-400' : 'text-red-400'}`}>
+                {isMyTurn ? 'Your Turn' : 'AI Turn'}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-slate-600 uppercase tracking-widest">Tiles Left</p>
+              <p className="text-lg font-black text-purple-400">{state?.tileBag || 0}</p>
+            </div>
           </div>
-          <div className="bg-indigo-900/60 px-6 py-3 rounded-xl border border-indigo-700/50">
-            <p className="text-xs text-indigo-400">TILES LEFT</p>
-            <p className="text-xl font-bold text-cyan-400">{getTilesRemaining()}</p>
+
+          <div className="flex gap-4 text-right">
+            <div>
+              <p className="text-[10px] text-slate-600 uppercase">You</p>
+              <p className="text-sm font-bold text-indigo-400">{playerScore}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-600 uppercase">AI</p>
+              <p className="text-sm font-bold text-red-400">{opponentScore}</p>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Main Game Area */}
-      <main className="pt-28 pb-40 px-4 sm:px-6">
-        <div className="w-full max-w-7xl mx-auto">
-          {/* 3D Game Canvas */}
-          <div className="relative h-[70vh] min-h-[500px] rounded-3xl overflow-hidden mb-8 shadow-2xl border-4 border-indigo-700/40 bg-gradient-to-br from-slate-900 to-indigo-950/30">
-            {typeof window !== 'undefined' && (
-              <Canvas shadows camera={{ position: [0, 8, 6], fov: 50 }}>
-                <Suspense fallback={null}>
-                  {/* Enhanced Luxurious Game Lighting */}
-                  <ambientLight intensity={0.3} />
-                  <directionalLight
-                    position={[5, 8, 5]}
-                    intensity={1.5}
-                    castShadow
-                    shadow-mapSize-width={2048}
-                    shadow-mapSize-height={2048}
-                    shadow-camera-far={20}
-                    shadow-camera-left={-8}
-                    shadow-camera-right={8}
-                    shadow-camera-top={8}
-                    shadow-camera-bottom={-8}
+      {/* 3D Canvas */}
+      <main className="pt-16 pb-64" style={{ paddingRight: coachOpen ? '320px' : '0' }}>
+        <div className="relative w-full h-[45vh] min-h-[300px]">
+          {typeof window !== 'undefined' && (
+            <Canvas shadows camera={{ position: [0, 11, 9], fov: 40 }}>
+              <Suspense fallback={null}>
+                <ambientLight intensity={0.35} />
+                <directionalLight
+                  position={[5, 8, 5]}
+                  intensity={1.5}
+                  castShadow
+                  shadow-mapSize-width={2048}
+                  shadow-mapSize-height={2048}
+                />
+                <directionalLight position={[-5, 8, -5]} intensity={0.6} color="#818cf8" />
+                <pointLight position={[0, 5, 0]} intensity={0.8} color="#818cf8" distance={18} />
+                <spotLight
+                  position={[0, 10, 0]}
+                  angle={0.6}
+                  intensity={0.7}
+                  color="#a78bfa"
+                  castShadow
+                />
+
+                <ScrabbleBoard3D size={2.0} />
+
+                {playerRack.map((tile: any, i: number) => (
+                  <Tile3D
+                    key={`rack-${i}`}
+                    letter={tile.letter}
+                    value={tile.value}
+                    position={[i * 0.2 - 0.7, 0.15, -1.5]}
                   />
-                  <directionalLight position={[-5, 8, -5]} intensity={0.7} color="#818cf8" />
-                  <pointLight
-                    position={[0, 5, 0]}
-                    intensity={1.0}
-                    color="#818cf8"
-                    distance={20}
-                    decay={2}
-                  />
-                  <spotLight
-                    position={[0, 10, 0]}
-                    angle={0.6}
-                    intensity={0.8}
-                    color="#a78bfa"
-                    castShadow
-                    shadow-mapSize-width={1024}
-                    shadow-mapSize-height={1024}
-                  />
-
-                  {/* 3D Scrabble Board */}
-                  <ScrabbleBoard3D size={1.2} />
-
-                  {/* Player rack of tiles - based on actual game state */}
-                  {getPlayerRack().map((tile: any, i: number) => (
-                    <Tile3D
-                      key={i}
-                      letter={tile.letter}
-                      value={tile.value}
-                      position={[i * 0.12 - 0.36, 0.15, -0.9]}
-                    />
-                  ))}
-
-                  {/* Placed tiles on board based on actual game state */}
-                  {getBoard().map((row: any[], rowIndex: number) =>
-                    row.map((tile: any, colIndex: number) => {
-                      if (tile) {
-                        return (
-                          <Tile3D
-                            key={`${rowIndex}-${colIndex}`}
-                            letter={tile.letter}
-                            value={tile.value}
-                            position={[colIndex * 0.075 + 0.0375, 0.015, rowIndex * 0.075 + 0.0375]}
-                          />
-                        );
-                      }
-                      return null;
-                    })
-                  )}
-
-                  <Environment preset="apartment" />
-                  <EffectComposer>
-                    <Bloom
-                      intensity={0.5}
-                      luminanceThreshold={0.2}
-                      luminanceSmoothing={0.9}
-                      height={300}
-                    />
-                    <DepthOfField focalLength={0.2} bokehScale={2} height={480} />
-                    <Vignette eskil={false} offset={0.1} darkness={0.7} />
-                    <SMAA />
-                  </EffectComposer>
-                  <OrbitControls
-                    enablePan={false}
-                    enableZoom={true}
-                    enableRotate={true}
-                    minDistance={3}
-                    maxDistance={12}
-                    maxPolarAngle={Math.PI / 2.2}
-                  />
-                </Suspense>
-              </Canvas>
-            )}
-            {typeof window === 'undefined' && (
-              <div className="flex items-center justify-center h-full bg-emerald-900/20">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
-                  <p className="text-emerald-300">Loading 3D Game...</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Player Tiles and Scores */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Your Rack Info (2D backup) */}
-            <div className="bg-indigo-900/40 rounded-2xl p-6 border border-indigo-700/30">
-              <p className="text-indigo-400 text-sm font-bold mb-4">YOUR TILES</p>
-              <div className="flex gap-2 flex-wrap mb-4">
-                {getPlayerRack().map((tile: any, i: number) => (
-                  <button
-                    key={i}
-                    onClick={() => handleTileSelect(i)}
-                    className={`w-10 h-10 rounded-lg font-bold text-lg transition-all ${
-                      selectedTiles.includes(i)
-                        ? 'bg-cyan-500 text-white ring-2 ring-cyan-300'
-                        : 'bg-amber-200 text-gray-900 hover:bg-amber-300'
-                    }`}
-                  >
-                    {tile.letter}
-                  </button>
                 ))}
-              </div>
-              <p className="text-indigo-400 text-sm font-bold mb-2">YOUR SCORE</p>
-              <p className="text-4xl font-bold text-cyan-400">{getPlayerScore()}</p>
-            </div>
 
-            {/* Opponent Info */}
-            <div className="bg-indigo-900/40 rounded-2xl p-6 border border-indigo-700/30 opacity-60">
-              <p className="text-indigo-400 text-sm font-bold mb-4">OPPONENT TILES</p>
-              <div className="flex gap-2 flex-wrap mb-4">
-                {Array.from(
-                  {
-                    length:
-                      gameStateData?.players?.[(gameStateData.currentPlayerIndex + 1) % 2]?.rack
-                        ?.length || 7,
-                  },
-                  (_, i) => (
-                    <div
-                      key={i}
-                      className="w-10 h-10 rounded-lg bg-gray-400 border border-gray-500"
-                    />
+                {(state?.board || []).map((row: any[], ri: number) =>
+                  row.map((tile: any, ci: number) =>
+                    tile ? (
+                      <Tile3D
+                        key={`b-${ri}-${ci}`}
+                        letter={tile.letter}
+                        value={tile.value}
+                        position={[(ci - 7) * 0.1 + 0.05, 0.015, (ri - 7) * 0.1 + 0.05]}
+                      />
+                    ) : null
                   )
                 )}
+
+                <Environment preset="apartment" />
+                <EffectComposer>
+                  <Bloom
+                    intensity={0.3}
+                    luminanceThreshold={0.3}
+                    luminanceSmoothing={0.9}
+                    height={300}
+                  />
+                  <Vignette eskil={false} offset={0.1} darkness={0.6} />
+                  <SMAA />
+                </EffectComposer>
+                <OrbitControls
+                  enablePan={false}
+                  enableZoom={true}
+                  minDistance={3}
+                  maxDistance={12}
+                  maxPolarAngle={Math.PI / 2.2}
+                />
+              </Suspense>
+            </Canvas>
+          )}
+        </div>
+
+        {/* Message */}
+        {lastMessage && (
+          <div className="text-center mt-3">
+            <p className="text-xs text-indigo-400/70">{lastMessage}</p>
+          </div>
+        )}
+
+        {/* Tile Rack */}
+        <div className="max-w-3xl mx-auto px-4 mt-4">
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 text-center">
+            Your Rack
+          </p>
+          <div className="flex gap-2 justify-center mb-4">
+            {playerRack.map((tile: any, i: number) => (
+              <button
+                key={i}
+                onClick={() => handleTileSelect(i)}
+                disabled={!isMyTurn || isAIThinking}
+                className={`w-12 h-12 rounded-lg font-bold text-lg transition-all relative disabled:opacity-50 ${
+                  selectedTiles.includes(i)
+                    ? 'bg-indigo-500 text-white ring-2 ring-indigo-300 scale-110'
+                    : 'bg-amber-100 text-slate-900 hover:bg-amber-200 hover:scale-105'
+                }`}
+              >
+                {tile.letter}
+                <span className="absolute bottom-0.5 right-1 text-[8px] opacity-60">
+                  {tile.value}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Word Input */}
+          {isMyTurn && !isAIThinking && (
+            <div className="bg-slate-900/60 rounded-xl p-4 border border-indigo-900/30">
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="text-xs text-slate-500 block mb-1">Word</label>
+                  <input
+                    type="text"
+                    value={wordInput}
+                    onChange={(e) => setWordInput(e.target.value.toUpperCase())}
+                    placeholder="Type word..."
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="text-xs text-slate-500 block mb-1">Row</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={14}
+                      value={placement.row}
+                      onChange={(e) =>
+                        setPlacement({ ...placement, row: parseInt(e.target.value) || 0 })
+                      }
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-slate-500 block mb-1">Col</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={14}
+                      value={placement.col}
+                      onChange={(e) =>
+                        setPlacement({ ...placement, col: parseInt(e.target.value) || 0 })
+                      }
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
               </div>
-              <p className="text-indigo-400 text-sm font-bold mb-2">OPPONENT SCORE</p>
-              <p className="text-4xl font-bold text-orange-400">{getOpponentScore()}</p>
+              <div className="flex items-center gap-3 mb-3">
+                <label className="text-xs text-slate-500">Direction:</label>
+                <button
+                  onClick={() => setPlacement({ ...placement, direction: 'horizontal' })}
+                  className={`px-3 py-1 rounded text-xs font-bold transition-all ${
+                    placement.direction === 'horizontal'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  Horizontal →
+                </button>
+                <button
+                  onClick={() => setPlacement({ ...placement, direction: 'vertical' })}
+                  className={`px-3 py-1 rounded text-xs font-bold transition-all ${
+                    placement.direction === 'vertical'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  Vertical ↓
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Game Over */}
+        {phase === 'finished' && (
+          <div
+            className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            style={{ right: coachOpen ? '320px' : '0' }}
+          >
+            <div className="bg-slate-900 border border-indigo-800/50 rounded-2xl p-10 text-center max-w-md mx-4">
+              <div className="text-5xl mb-4">
+                {playerScore > opponentScore ? '🏆' : playerScore === opponentScore ? '🤝' : '😤'}
+              </div>
+              <h2 className="text-3xl font-black mb-2">
+                {playerScore > opponentScore ? (
+                  <span className="text-indigo-400">You Win!</span>
+                ) : playerScore === opponentScore ? (
+                  <span className="text-amber-400">Tie Game!</span>
+                ) : (
+                  <span className="text-red-400">AI Wins</span>
+                )}
+              </h2>
+              <p className="text-slate-400 mb-4">
+                Final Score: You {playerScore} - AI {opponentScore}
+              </p>
+              <button
+                onClick={handleStartGame}
+                className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl transition-all active:scale-95"
+              >
+                Play Again
+              </button>
             </div>
           </div>
-        </div>
+        )}
       </main>
 
-      {/* Action Controls */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-indigo-950/95 backdrop-blur-xl border-t border-indigo-700/50 py-6 px-6">
+      {/* Action Bar */}
+      <footer
+        className="fixed bottom-0 left-0 z-30 bg-[#06060d]/95 backdrop-blur-xl border-t border-indigo-900/30 py-4 px-4"
+        style={{ right: coachOpen ? '320px' : '0' }}
+      >
         <div className="max-w-4xl mx-auto">
-          <p className="text-center text-indigo-400 mb-4">
-            {selectedTiles.length > 0
-              ? `${selectedTiles.length} tiles selected`
-              : 'Select tiles to form a word'}
-          </p>
-
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={handlePlayWord}
-              disabled={selectedTiles.length === 0}
-              className={`px-8 py-4 rounded-lg font-bold transition-all ${
-                selectedTiles.length === 0
-                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white hover:shadow-lg'
-              }`}
-            >
-              ✓ Play Word
-            </button>
-
-            <button
-              onClick={handlePass}
-              className="px-8 py-4 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-bold transition-all hover:shadow-lg"
-            >
-              Skip Turn
-            </button>
-
-            <button
-              onClick={() => setSelectedTiles([])}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold transition-all hover:shadow-lg"
-            >
-              Clear Selection
-            </button>
-          </div>
+          {isAIThinking ? (
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin" />
+              <p className="text-indigo-400/70 text-sm">AI is thinking...</p>
+            </div>
+          ) : isMyTurn ? (
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={handlePlayWord}
+                disabled={!wordInput.trim()}
+                className="px-8 py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-indigo-600 hover:bg-indigo-500 text-white active:scale-95"
+              >
+                Play Word
+              </button>
+              <button
+                onClick={handleSkip}
+                className="px-6 py-3 rounded-xl font-bold text-sm transition-all bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 border border-slate-600/50 active:scale-95"
+              >
+                Skip Turn
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedTiles([]);
+                  setWordInput('');
+                }}
+                className="px-6 py-3 rounded-xl font-bold text-sm transition-all bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 active:scale-95"
+              >
+                Clear
+              </button>
+            </div>
+          ) : (
+            <p className="text-center text-slate-500 text-sm">Waiting for AI...</p>
+          )}
         </div>
       </footer>
+
+      {/* AI Coach */}
+      <AICoach
+        analysis={coachAnalysis}
+        gameType="scrabble"
+        isOpen={coachOpen}
+        onToggle={() => setCoachOpen(!coachOpen)}
+      />
     </div>
   );
 }

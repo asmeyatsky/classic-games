@@ -1,179 +1,203 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { BackgammonGame } from '@classic-games/game-engine';
+import { BackgammonGame, BackgammonCoach } from '@classic-games/game-engine';
 
-// Dynamically import Three.js components to prevent SSR issues
-const Canvas = dynamic(() => import('@react-three/fiber').then((mod) => mod.Canvas), {
+const Canvas = dynamic(() => import('@react-three/fiber').then((m) => m.Canvas), { ssr: false });
+const OrbitControls = dynamic(() => import('@react-three/drei').then((m) => m.OrbitControls), {
   ssr: false,
 });
-const OrbitControls = dynamic(() => import('@react-three/drei').then((mod) => mod.OrbitControls), {
+const Environment = dynamic(() => import('@react-three/drei').then((m) => m.Environment), {
   ssr: false,
 });
-const Environment = dynamic(() => import('@react-three/drei').then((mod) => mod.Environment), {
-  ssr: false,
-});
-
-// Dynamically import postprocessing components
 const EffectComposer = dynamic(
-  () => import('@react-three/postprocessing').then((mod) => mod.EffectComposer),
+  () => import('@react-three/postprocessing').then((m) => m.EffectComposer),
   { ssr: false }
 );
-const Bloom = dynamic(() => import('@react-three/postprocessing').then((mod) => mod.Bloom), {
+const Bloom = dynamic(() => import('@react-three/postprocessing').then((m) => m.Bloom), {
   ssr: false,
 });
-const DepthOfField = dynamic(
-  () => import('@react-three/postprocessing').then((mod) => mod.DepthOfField),
-  { ssr: false }
-);
-const Vignette = dynamic(() => import('@react-three/postprocessing').then((mod) => mod.Vignette), {
+const Vignette = dynamic(() => import('@react-three/postprocessing').then((m) => m.Vignette), {
   ssr: false,
 });
-const SMAA = dynamic(() => import('@react-three/postprocessing').then((mod) => mod.SMAA), {
+const SMAA = dynamic(() => import('@react-three/postprocessing').then((m) => m.SMAA), {
   ssr: false,
 });
 
-type GameState = 'landing' | 'setup' | 'playing' | 'finished';
+const Board3D = dynamic(() => import('@classic-games/three-components').then((m) => m.Board3D), {
+  ssr: false,
+});
+const Dice3D = dynamic(() => import('@classic-games/three-components').then((m) => m.Dice3D), {
+  ssr: false,
+});
+const Checker3D = dynamic(
+  () => import('@classic-games/three-components').then((m) => m.Checker3D),
+  { ssr: false }
+);
+const AICoach = dynamic(() => import('../../../components/AICoach'), { ssr: false });
+
+type GamePhase = 'landing' | 'playing' | 'finished';
 
 export default function BackgammonPage() {
-  const [gameState, setGameState] = useState<GameState>('landing');
-  const [backgammonGame, setBackgammonGame] = useState<BackgammonGame | null>(null);
-  const [gameStateData, setGameStateData] = useState<any>(null);
-  const [playerId] = useState('player1');
-  const [opponentId] = useState('opponent1');
+  const [phase, setPhase] = useState<GamePhase>('landing');
+  const [game, setGame] = useState<BackgammonGame | null>(null);
+  const [state, setState] = useState<any>(null);
+  const [coachOpen, setCoachOpen] = useState(true);
+  const [isAIThinking, setIsAIThinking] = useState(false);
+  const [lastAction, setLastAction] = useState('');
+
+  const refreshState = useCallback(() => {
+    if (!game) return null;
+    const s = game.getState();
+    setState(s);
+    return s;
+  }, [game]);
+
+  // AI opponent turn
+  useEffect(() => {
+    if (!game || !state || phase !== 'playing') return;
+    if (state.currentPlayer !== 'black') return; // AI plays black
+    if (game.isGameOver()) {
+      setPhase('finished');
+      return;
+    }
+
+    setIsAIThinking(true);
+
+    const runAITurn = async () => {
+      // Step 1: Roll dice
+      await new Promise((r) => setTimeout(r, 800));
+      if (state.gamePhase === 'rolling') {
+        game.rollDice();
+        const s1 = game.getState();
+        setState(s1);
+        setLastAction(`AI rolled ${s1.dice[0]} and ${s1.dice[1]}`);
+
+        // Step 2: Make moves
+        await new Promise((r) => setTimeout(r, 600));
+        let moves = game.getAvailableMoves();
+        while (moves.length > 0) {
+          const ranked = BackgammonCoach.rankMoves(game.getState(), moves);
+          if (ranked.length > 0) {
+            game.makeMove(ranked[0]);
+          }
+          await new Promise((r) => setTimeout(r, 400));
+          setState(game.getState());
+          moves = game.getAvailableMoves();
+        }
+      }
+
+      const finalState = game.getState();
+      setState(finalState);
+      setIsAIThinking(false);
+
+      if (game.isGameOver()) {
+        setPhase('finished');
+      }
+    };
+
+    const timer = setTimeout(runAITurn, 600);
+    return () => clearTimeout(timer);
+  }, [state?.currentPlayer, state?.gamePhase, game, phase]);
 
   const handleStartGame = () => {
     const newGame = new BackgammonGame();
-    setBackgammonGame(newGame);
-    setGameState('playing');
-    setGameStateData(newGame.getState());
+    setGame(newGame);
+    setState(newGame.getState());
+    setPhase('playing');
   };
 
   const handleRollDice = () => {
-    if (backgammonGame) {
-      const dice = backgammonGame.rollDice();
-      setGameStateData(backgammonGame.getState());
+    if (!game || isAIThinking || state?.currentPlayer !== 'white') return;
+    game.rollDice();
+    const s = refreshState();
+    if (s) setLastAction(`You rolled ${s.dice[0]} and ${s.dice[1]}`);
+  };
+
+  const handleMove = (move: any) => {
+    if (!game || isAIThinking) return;
+    const success = game.makeMove(move);
+    if (success) {
+      refreshState();
+      if (game.isGameOver()) setPhase('finished');
     }
   };
 
-  const handleEndTurn = () => {
-    // In the actual game engine, ending turn happens automatically after moves are made
-    // This function is for UI purposes only
-    if (backgammonGame) {
-      setGameStateData(backgammonGame.getState());
-    }
+  const availableMoves = game ? game.getAvailableMoves() : [];
+  const coachAnalysis = state ? BackgammonCoach.analyze(state) : null;
+  const isMyTurn = state?.currentPlayer === 'white';
+
+  const formatPoint = (point: number) => {
+    if (point === -1) return 'Bar';
+    if (point === 25) return 'Off';
+    return `Pt ${point + 1}`;
   };
 
-  // Get current player from the game state
-  const getCurrentPlayer = () => {
-    if (!gameStateData) return 'white';
-    return gameStateData.currentPlayer;
-  };
-
-  // Get dice from the game state
-  const getDice = () => {
-    if (!gameStateData) return [0, 0];
-    return gameStateData.dice;
-  };
-
-  // Get board from the game state
-  const getBoard = () => {
-    if (!gameStateData) return Array(24).fill(0);
-    return gameStateData.board;
-  };
-
-  // Get bar pieces from the game state
-  const getBarPieces = () => {
-    if (!gameStateData) return { white: 0, black: 0 };
-    return gameStateData.bar;
-  };
-
-  // Get born off pieces from the game state
-  const getBornOffPieces = () => {
-    if (!gameStateData) return { white: 0, black: 0 };
-    return gameStateData.bornOff;
-  };
-
-  // Get game phase from the game state
-  const getGamePhase = () => {
-    if (!gameStateData) return 'rolling';
-    return gameStateData.gamePhase;
-  };
-
-  // LANDING SCREEN
-  if (gameState === 'landing') {
+  // LANDING
+  if (phase === 'landing') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 text-slate-900 flex items-center justify-center p-6">
-        <div className="max-w-4xl w-full">
-          <div className="bg-white rounded-3xl border-4 border-amber-600 shadow-2xl p-12">
-            {/* Header */}
-            <div className="text-center mb-12">
-              <div className="text-9xl mb-6">🎲</div>
-              <h1 className="text-7xl font-bold mb-4 text-amber-900">Backgammon</h1>
-              <div className="h-2 w-48 mx-auto bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"></div>
-              <p className="mt-6 text-2xl text-amber-800 font-semibold">
-                One of the world's oldest board games
-              </p>
-            </div>
-
-            {/* Rules */}
-            <div className="mb-10 bg-amber-50 rounded-2xl p-8 border-2 border-amber-300">
-              <h2 className="text-4xl font-bold text-amber-900 mb-6 text-center">How to Play</h2>
-              <div className="grid gap-5">
-                {[
-                  'Move all your checkers around the board and bear them off before your opponent',
-                  'Roll two dice each turn to determine how many points you can move',
-                  'Land on opponent pieces to send them back to the starting bar',
-                  'First player to remove all their checkers wins the game',
-                ].map((rule, index) => (
-                  <div key={index} className="flex items-start gap-4 text-lg">
-                    <span className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                      {index + 1}
-                    </span>
-                    <p className="leading-relaxed text-slate-800 pt-2 text-xl">{rule}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Start Button */}
-            <button
-              onClick={handleStartGame}
-              className="w-full py-7 px-10 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold text-3xl rounded-2xl shadow-2xl hover:shadow-amber-500/50 transition-all duration-300 transform hover:scale-105 active:scale-95"
-            >
-              ✨ Start Playing ✨
-            </button>
-
-            <Link
-              href="/"
-              className="block text-center mt-6 text-amber-700 hover:text-amber-900 transition-colors text-lg font-semibold"
-            >
-              ← Back to Games
-            </Link>
+      <div className="min-h-screen bg-[#0a0806] text-white flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full">
+          <div className="text-center mb-12">
+            <div className="text-8xl mb-6 opacity-90">⚄</div>
+            <h1 className="text-6xl font-black tracking-tight mb-3">
+              <span className="bg-gradient-to-r from-amber-400 to-yellow-300 text-transparent bg-clip-text">
+                Backgammon
+              </span>
+            </h1>
+            <p className="text-slate-400 text-lg">with AI Strategy Coach</p>
           </div>
+
+          <div className="bg-slate-900/60 backdrop-blur rounded-2xl p-8 border border-amber-900/30 mb-8">
+            <div className="grid gap-4 text-slate-300">
+              {[
+                'Move all 15 checkers around the board and bear them off before your opponent',
+                'Roll two dice each turn to determine your moves',
+                'Land on single opponent checkers to send them to the bar',
+                'AI coach analyzes pip counts, blots, and race advantage in real-time',
+              ].map((rule, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <span className="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-sm font-bold shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <p className="text-sm leading-relaxed">{rule}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={handleStartGame}
+            className="w-full py-5 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-bold text-xl rounded-xl transition-all duration-200 active:scale-[0.98]"
+            style={{ boxShadow: '0 0 40px rgba(245,158,11,0.2)' }}
+          >
+            Roll the Dice
+          </button>
+
+          <Link
+            href="/"
+            className="block text-center mt-6 text-slate-500 hover:text-slate-300 transition-colors text-sm"
+          >
+            Back to Games
+          </Link>
         </div>
       </div>
     );
   }
 
-  // GAME SCREEN
+  // GAME
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-amber-950/50 to-slate-950 text-white">
-      {/* Luxurious Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-amber-950/95 via-yellow-900/95 to-amber-950/95 backdrop-blur-xl border-b-2 border-amber-700/50 shadow-2xl">
-        <div className="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between">
+    <div className="min-h-screen bg-[#0a0806] text-white">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-30 bg-[#0a0806]/90 backdrop-blur-xl border-b border-amber-900/30">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link
             href="/"
-            className="flex items-center gap-3 text-amber-300 hover:text-amber-200 transition-colors group"
+            className="text-slate-500 hover:text-amber-400 transition-colors text-sm flex items-center gap-1.5"
           >
-            <svg
-              className="w-6 h-6 group-hover:-translate-x-1 transition-transform"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -181,200 +205,227 @@ export default function BackgammonPage() {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            <span className="font-semibold">Back to Games</span>
+            Exit
           </Link>
 
-          <div className="text-center">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 text-transparent bg-clip-text">
-              Backgammon
-            </h1>
-            <p className="text-sm text-amber-400 mt-1">{getCurrentPlayer().toUpperCase()}'s Turn</p>
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <p className="text-[10px] text-slate-600 uppercase tracking-widest">Turn</p>
+              <p className={`text-sm font-bold ${isMyTurn ? 'text-amber-400' : 'text-red-400'}`}>
+                {isMyTurn ? 'White (You)' : 'Black (AI)'}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-slate-600 uppercase tracking-widest">Dice</p>
+              <p className="text-lg font-black text-amber-300">
+                {state?.dice[0] > 0 ? `${state.dice[0]} - ${state.dice[1]}` : '--'}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-slate-600 uppercase tracking-widest">Phase</p>
+              <p className="text-sm font-bold text-slate-400 capitalize">
+                {state?.gamePhase || 'rolling'}
+              </p>
+            </div>
           </div>
 
-          <div className="bg-gradient-to-br from-amber-900/60 to-yellow-900/60 px-8 py-4 rounded-xl border-2 border-amber-600/50 shadow-lg">
-            <p className="text-xs text-amber-400 font-semibold">GAME STATUS</p>
-            <p className="text-2xl font-bold text-yellow-300">In Progress</p>
+          <div className="flex gap-4 text-right">
+            <div>
+              <p className="text-[10px] text-slate-600 uppercase">White Off</p>
+              <p className="text-sm font-bold text-amber-300">{state?.bornOff?.white || 0}/15</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-600 uppercase">Black Off</p>
+              <p className="text-sm font-bold text-red-400">{state?.bornOff?.black || 0}/15</p>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Main Game Area */}
-      <main className="pt-32 pb-48 px-4 sm:px-6">
-        <div className="w-full max-w-7xl mx-auto">
-          {/* 3D Game Canvas */}
-          <div className="relative h-[70vh] min-h-[500px] rounded-3xl overflow-hidden mb-10 shadow-2xl border-4 border-amber-700/40 bg-gradient-to-br from-slate-900 to-amber-950/30">
-            {typeof window !== 'undefined' && (
-              <Canvas shadows camera={{ position: [0, 6, 10], fov: 45 }}>
-                <Suspense fallback={null}>
-                  {/* Enhanced Luxurious Lighting */}
-                  <ambientLight intensity={0.3} />
-                  <directionalLight
-                    position={[5, 8, 5]}
-                    intensity={1.5}
-                    castShadow
-                    shadow-mapSize-width={2048}
-                    shadow-mapSize-height={2048}
-                    shadow-camera-far={20}
-                    shadow-camera-left={-8}
-                    shadow-camera-right={8}
-                    shadow-camera-top={8}
-                    shadow-camera-bottom={-8}
-                  />
-                  <directionalLight position={[-5, 8, -5]} intensity={0.7} color="#fbbf24" />
-                  <pointLight
-                    position={[0, 5, 0]}
-                    intensity={1.0}
-                    color="#fbbf24"
-                    distance={20}
-                    decay={2}
-                  />
-                  <spotLight
-                    position={[0, 10, 0]}
-                    angle={0.6}
-                    intensity={0.7}
-                    color="#fcd34d"
-                    castShadow
-                    shadow-mapSize-width={1024}
-                    shadow-mapSize-height={1024}
-                  />
+      {/* 3D Canvas */}
+      <main className="pt-16 pb-52" style={{ paddingRight: coachOpen ? '320px' : '0' }}>
+        <div className="relative w-full h-[50vh] min-h-[350px]">
+          {typeof window !== 'undefined' && (
+            <Canvas shadows camera={{ position: [0, 9, 12], fov: 35 }}>
+              <Suspense fallback={null}>
+                <ambientLight intensity={0.3} />
+                <directionalLight
+                  position={[5, 8, 5]}
+                  intensity={1.5}
+                  castShadow
+                  shadow-mapSize-width={2048}
+                  shadow-mapSize-height={2048}
+                />
+                <directionalLight position={[-5, 8, -5]} intensity={0.6} color="#fbbf24" />
+                <pointLight position={[0, 5, 0]} intensity={0.8} color="#fbbf24" distance={18} />
+                <spotLight
+                  position={[0, 10, 0]}
+                  angle={0.6}
+                  intensity={0.6}
+                  color="#fcd34d"
+                  castShadow
+                />
 
-                  <Board3D />
+                <Board3D scale={[1.8, 1.8, 1.8]} />
 
-                  {/* Dice */}
-                  {getGamePhase() === 'moving' && (
-                    <>
-                      <Dice3D value={getDice()[0]} position={[-1.2, 0.3, 0]} rolling={false} />
-                      <Dice3D value={getDice()[1]} position={[-0.6, 0.3, 0]} rolling={false} />
-                    </>
-                  )}
+                {state?.gamePhase === 'moving' && (
+                  <>
+                    <Dice3D value={state.dice[0]} position={[-1.2, 0.3, 0]} rolling={false} />
+                    <Dice3D value={state.dice[1]} position={[-0.6, 0.3, 0]} rolling={false} />
+                  </>
+                )}
 
-                  {/* Checkers - positioned properly on the board based on game state */}
-                  {getBoard().map((count, index) => {
-                    if (count === 0) return null; // No checker at this position
-
-                    const isPositive = count > 0;
-                    const absCount = Math.abs(count);
-                    const checkers = [];
-
-                    // Position on the board (simplified for visualization)
-                    const x = ((index % 12) - 5.5) * 0.8; // Spread checkers across the board
-                    const z = index < 12 ? 1.35 : -1.35; // White on top, black on bottom
-
-                    // Create multiple checkers if stacked
-                    for (let i = 0; i < absCount; i++) {
-                      checkers.push(
-                        <Checker3D
-                          key={`checker-${index}-${i}`}
-                          color={isPositive ? 'white' : 'black'}
-                          position={[x, 0.05 + i * 0.04, z]}
-                          stackIndex={i}
-                        />
-                      );
-                    }
-
-                    return checkers;
-                  })}
-
-                  {/* Checkers on bar */}
-                  {getBarPieces().white > 0 &&
-                    Array.from({ length: getBarPieces().white }, (_, i) => (
-                      <Checker3D
-                        key={`bar-white-${i}`}
-                        color="white"
-                        position={[0, 0.05 + i * 0.04, 0.5]}
-                        stackIndex={i}
-                      />
-                    ))}
-                  {getBarPieces().black > 0 &&
-                    Array.from({ length: getBarPieces().black }, (_, i) => (
-                      <Checker3D
-                        key={`bar-black-${i}`}
-                        color="black"
-                        position={[0, 0.05 + i * 0.04, -0.5]}
-                        stackIndex={i}
-                      />
-                    ))}
-
-                  <Environment preset="sunset" />
-                  <EffectComposer>
-                    <Bloom
-                      intensity={0.5}
-                      luminanceThreshold={0.2}
-                      luminanceSmoothing={0.9}
-                      height={300}
+                {(state?.board || []).map((count: number, index: number) => {
+                  if (count === 0) return null;
+                  const isPositive = count > 0;
+                  const absCount = Math.abs(count);
+                  const x = ((index % 12) - 5.5) * 0.8;
+                  const z = index < 12 ? 1.35 : -1.35;
+                  return Array.from({ length: absCount }, (_, i) => (
+                    <Checker3D
+                      key={`c-${index}-${i}`}
+                      color={isPositive ? 'white' : 'black'}
+                      position={[x, 0.05 + i * 0.04, z]}
+                      stackIndex={i}
                     />
-                    <DepthOfField focalLength={0.2} bokehScale={2} height={480} />
-                    <Vignette eskil={false} offset={0.1} darkness={0.8} />
-                    <SMAA />
-                  </EffectComposer>
-                  <OrbitControls
-                    enablePan={false}
-                    enableZoom={true}
-                    minDistance={5}
-                    maxDistance={15}
-                    maxPolarAngle={Math.PI / 2.2}
-                  />
-                </Suspense>
-              </Canvas>
-            )}
-          </div>
+                  ));
+                })}
 
-          {/* Score Display */}
-          <div className="grid grid-cols-2 gap-8 mb-10">
-            <div
-              className={`bg-gradient-to-br ${getCurrentPlayer() === 'white' ? 'from-amber-900/60 to-yellow-900/60 border-amber-500' : 'from-slate-800/60 to-slate-700/60 border-slate-600'} rounded-2xl p-8 border-2 shadow-xl transform transition-all ${getCurrentPlayer() === 'white' ? 'scale-105 shadow-amber-500/30' : ''}`}
-            >
-              <p className="text-amber-400 text-sm mb-2 font-bold uppercase tracking-wide">
-                WHITE PLAYER
-              </p>
-              <p className="text-5xl font-bold text-yellow-300 mb-2">{getBornOffPieces().white}</p>
-              <p className="text-sm text-amber-300/70">
-                Checkers Borne Off: {getBornOffPieces().white}
-              </p>
-            </div>
-            <div
-              className={`bg-gradient-to-br ${getCurrentPlayer() === 'black' ? 'from-amber-900/60 to-yellow-900/60 border-amber-500' : 'from-slate-800/60 to-slate-700/60 border-slate-600'} rounded-2xl p-8 border-2 shadow-xl transform transition-all ${getCurrentPlayer() === 'black' ? 'scale-105 shadow-amber-500/30' : ''}`}
-            >
-              <p className="text-amber-400 text-sm mb-2 font-bold uppercase tracking-wide">
-                BLACK PLAYER
-              </p>
-              <p className="text-5xl font-bold text-orange-400 mb-2">{getBornOffPieces().black}</p>
-              <p className="text-sm text-amber-300/70">
-                Checkers Borne Off: {getBornOffPieces().black}
-              </p>
+                {/* Bar checkers */}
+                {Array.from({ length: state?.bar?.white || 0 }, (_, i) => (
+                  <Checker3D
+                    key={`bw-${i}`}
+                    color="white"
+                    position={[0, 0.05 + i * 0.04, 0.5]}
+                    stackIndex={i}
+                  />
+                ))}
+                {Array.from({ length: state?.bar?.black || 0 }, (_, i) => (
+                  <Checker3D
+                    key={`bb-${i}`}
+                    color="black"
+                    position={[0, 0.05 + i * 0.04, -0.5]}
+                    stackIndex={i}
+                  />
+                ))}
+
+                <Environment preset="sunset" />
+                <EffectComposer>
+                  <Bloom
+                    intensity={0.3}
+                    luminanceThreshold={0.3}
+                    luminanceSmoothing={0.9}
+                    height={300}
+                  />
+                  <Vignette eskil={false} offset={0.1} darkness={0.7} />
+                  <SMAA />
+                </EffectComposer>
+                <OrbitControls
+                  enablePan={false}
+                  enableZoom={true}
+                  minDistance={5}
+                  maxDistance={15}
+                  maxPolarAngle={Math.PI / 2.2}
+                />
+              </Suspense>
+            </Canvas>
+          )}
+        </div>
+
+        {/* Last Action */}
+        {lastAction && (
+          <div className="text-center mt-3">
+            <p className="text-xs text-amber-400/70">{lastAction}</p>
+          </div>
+        )}
+
+        {/* Available Moves */}
+        {isMyTurn && state?.gamePhase === 'moving' && availableMoves.length > 0 && (
+          <div className="max-w-3xl mx-auto px-4 mt-4">
+            <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 text-center">
+              Available Moves
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {availableMoves.map((move: any, i: number) => (
+                <button
+                  key={i}
+                  onClick={() => handleMove(move)}
+                  className="px-4 py-2 rounded-lg bg-amber-900/40 hover:bg-amber-800/50 border border-amber-700/50 text-amber-300 text-sm font-medium transition-all active:scale-95"
+                >
+                  {formatPoint(move.from)} → {formatPoint(move.to)}
+                  <span className="text-amber-500/60 ml-1.5 text-xs">
+                    (die {state.dice[move.dieIndex]})
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Game Over */}
+        {phase === 'finished' && (
+          <div
+            className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            style={{ right: coachOpen ? '320px' : '0' }}
+          >
+            <div className="bg-slate-900 border border-amber-800/50 rounded-2xl p-10 text-center max-w-md mx-4">
+              <div className="text-5xl mb-4">{game?.getWinner() === 'white' ? '🏆' : '😤'}</div>
+              <h2 className="text-3xl font-black mb-4">
+                {game?.getWinner() === 'white' ? (
+                  <span className="text-amber-400">You Win!</span>
+                ) : (
+                  <span className="text-red-400">AI Wins</span>
+                )}
+              </h2>
+              <button
+                onClick={handleStartGame}
+                className="px-8 py-3 bg-gradient-to-r from-amber-600 to-yellow-600 text-white font-bold rounded-xl transition-all active:scale-95"
+              >
+                Play Again
+              </button>
+            </div>
+          </div>
+        )}
       </main>
 
-      {/* Luxurious Action Controls */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-amber-950/98 via-yellow-900/98 to-amber-950/98 backdrop-blur-xl border-t-2 border-amber-700/50 py-8 px-8 shadow-2xl">
-        <div className="max-w-4xl mx-auto">
-          <p className="text-center text-amber-300 mb-6 text-lg">
-            {getGamePhase() === 'rolling'
-              ? '🎲 Roll the dice to begin your turn'
-              : '♟️ Make your move'}
-          </p>
-
-          <div className="flex gap-4 justify-center">
-            {getGamePhase() === 'rolling' ? (
-              <button
-                onClick={handleRollDice}
-                className="px-12 py-5 bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 hover:from-amber-500 hover:via-yellow-400 hover:to-amber-500 text-slate-900 rounded-xl font-bold text-xl transition-all hover:shadow-2xl shadow-amber-500/50 transform hover:scale-105 active:scale-95 border-2 border-amber-400/50"
-              >
-                🎲 Roll Dice
-              </button>
-            ) : (
-              <button
-                onClick={handleEndTurn}
-                className="px-10 py-5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl font-bold text-lg transition-all hover:shadow-xl shadow-emerald-500/30 transform hover:scale-105 active:scale-95"
-              >
-                ✓ End Turn
-              </button>
-            )}
-          </div>
+      {/* Action Bar */}
+      <footer
+        className="fixed bottom-0 left-0 z-30 bg-[#0a0806]/95 backdrop-blur-xl border-t border-amber-900/30 py-5 px-4"
+        style={{ right: coachOpen ? '320px' : '0' }}
+      >
+        <div className="max-w-4xl mx-auto text-center">
+          {isAIThinking ? (
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-5 h-5 border-2 border-amber-500/30 border-t-amber-400 rounded-full animate-spin" />
+              <p className="text-amber-400/70 text-sm">AI is thinking...</p>
+            </div>
+          ) : isMyTurn && state?.gamePhase === 'rolling' ? (
+            <button
+              onClick={handleRollDice}
+              className="px-12 py-4 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 rounded-xl font-bold text-lg transition-all active:scale-95"
+              style={{ boxShadow: '0 0 30px rgba(245,158,11,0.25)' }}
+            >
+              Roll Dice
+            </button>
+          ) : isMyTurn && state?.gamePhase === 'moving' && availableMoves.length === 0 ? (
+            <p className="text-amber-400/70 text-sm">
+              No moves available - turn passes automatically
+            </p>
+          ) : (
+            <p className="text-slate-500 text-sm">
+              {isMyTurn ? 'Select a move above' : 'Waiting for AI...'}
+            </p>
+          )}
         </div>
       </footer>
+
+      {/* AI Coach */}
+      <AICoach
+        analysis={coachAnalysis}
+        gameType="backgammon"
+        isOpen={coachOpen}
+        onToggle={() => setCoachOpen(!coachOpen)}
+      />
     </div>
   );
 }

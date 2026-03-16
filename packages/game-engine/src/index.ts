@@ -22,5 +22,11 @@ export { TileBag } from './scrabble/TileBag';
 export * from './ai';
 export { AIPlayerService, createAIOpponent, createAIOpponents } from './ai/AIPlayerService';
 
+// AI Strategy Coach
+export * from './coach';
+export { PokerCoach } from './coach/PokerCoach';
+export { BackgammonCoach } from './coach/BackgammonCoach';
+export { ScrabbleCoach } from './coach/ScrabbleCoach';
+
 // Shared Types
 export * from './types';
